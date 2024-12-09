@@ -856,10 +856,10 @@ def main(cfg: SanaConfig) -> None:
         data if data.startswith(("https://", "http://", "gs://", "/", "~")) else osp.abspath(osp.expanduser(data))
         for data in config.data.data_dir
     ]
-    num_replicas = torch.distributed.get_world_size()
+    num_replicas = 0 #torch.distributed.get_world_size()
     if os.environ.get('WORLD_SIZE') is not None:
         num_replicas = int(os.environ["WORLD_SIZE"])
-    rank = torch.distributed.get_rank()
+    rank = 0 #torch.distributed.get_rank()
     if os.environ.get('RANK') is not None:
         rank = int(os.environ["RANK"])
     dataset = RatioBucketsDataset(config.data.buckets_file)
