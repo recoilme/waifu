@@ -15,42 +15,42 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import datetime
-import getpass
 import hashlib
-import json
 import os
 import os.path as osp
-import random
 import time
 import types
 import warnings
-from dataclasses import asdict
 from pathlib import Path
 
 import numpy as np
 import pyrallis
 import torch
+import torch.utils
+import torch.utils.data
+from PIL import Image
 from accelerate import Accelerator, InitProcessGroupKwargs
 from accelerate.utils import DistributedType
-from PIL import Image
 from termcolor import colored
 
 warnings.filterwarnings("ignore")  # ignore warning
 
+import gc
+import json
+import math
+import random
 
 from diffusion import DPMS, FlowEuler, Scheduler
-from diffusion.data.builder import build_dataloader, build_dataset
-from diffusion.data.wids import DistributedRangedSampler
-from diffusion.model.builder import build_model, get_tokenizer_and_text_encoder, get_vae, vae_decode, vae_encode
+from diffusion.model.builder import build_model, get_tokenizer_and_text_encoder, get_vae, vae_decode
 from diffusion.model.respace import compute_density_for_timestep_sampling
 from diffusion.utils.checkpoint import load_checkpoint, save_checkpoint
 from diffusion.utils.config import SanaConfig
-from diffusion.utils.data_sampler import AspectRatioBatchSampler
 from diffusion.utils.dist_utils import clip_grad_norm_, flush, get_world_size
 from diffusion.utils.logger import LogBuffer, get_root_logger
 from diffusion.utils.lr_scheduler import build_lr_scheduler
-from diffusion.utils.misc import DebugUnderflowOverflow, init_random_seed, read_config, set_random_seed
-from diffusion.utils.optimizer import auto_scale_lr, build_optimizer
+from diffusion.utils.misc import DebugUnderflowOverflow, init_random_seed, set_random_seed
+from diffusion.utils.optimizer import build_optimizer
+from transformers import SiglipTextModel, AutoTokenizer
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
@@ -62,8 +62,11 @@ def set_fsdp_env():
     os.environ["FSDP_TRANSFORMER_CLS_TO_WRAP"] = "SanaBlock"
 
 
+image_index = 0
+
+
 @torch.inference_mode()
-def log_validation(accelerator, config, model, logger, step, device, vae=None, init_noise=None):
+def idation(accelerator, config, model, step, device, vae=None, init_noise=None):
     torch.cuda.empty_cache()
     vis_sampler = config.scheduler.vis_sampler
     model = accelerator.unwrap_model(model).eval()
@@ -76,10 +79,17 @@ def log_validation(accelerator, config, model, logger, step, device, vae=None, i
     logger.info("Running validation... ")
     image_logs = []
 
-    def run_sampling(init_z=None, label_suffix="", vae=None, sampler="dpm-solver"):
+    del_vae = False
+    if vae is None:
+        vae = get_vae(config.vae.vae_type, config.vae.vae_pretrained, accelerator.device).to(torch.float16)
+        del_vae = True
+
+    def run_sampling(init_z=None, label_suffix="", sampler="dpm-solver"):
         latents = []
         current_image_logs = []
+
         for prompt in validation_prompts:
+            logger.info(prompt)
             z = (
                 torch.randn(1, config.vae.vae_latent_dim, latent_size, latent_size, device=device)
                 if init_z is None
@@ -111,22 +121,23 @@ def log_validation(accelerator, config, model, logger, step, device, vae=None, i
                 )
             elif sampler == "flow_euler":
                 flow_solver = FlowEuler(
-                    model, condition=caption_embs, uncondition=null_y, cfg_scale=4.5, model_kwargs=model_kwargs
+                    model, condition=caption_embs, uncondition=null_y, cfg_scale=5.5, model_kwargs=model_kwargs
                 )
                 denoised = flow_solver.sample(z, steps=28)
-            elif sampler == "flow_dpm-solver": 
+            elif sampler == "flow_dpm-solver":
                 dpm_solver = DPMS(
                     model.forward_with_dpmsolver,
                     condition=caption_embs,
                     uncondition=null_y,
-                    cfg_scale=4.5,
+                    cfg_scale=5.5,
                     model_type="flow",
                     model_kwargs=model_kwargs,
                     schedule="FLOW",
                 )
+
                 denoised = dpm_solver.sample(
                     z,
-                    steps=20,
+                    steps=24,
                     order=2,
                     skip_type="time_uniform_flow",
                     method="multistep",
@@ -137,8 +148,7 @@ def log_validation(accelerator, config, model, logger, step, device, vae=None, i
 
             latents.append(denoised)
         torch.cuda.empty_cache()
-        if vae is None:
-            vae = get_vae(config.vae.vae_type, config.vae.vae_pretrained, accelerator.device).to(torch.float16)
+
         for prompt, latent in zip(validation_prompts, latents):
             latent = latent.to(torch.float16)
             samples = vae_decode(config.vae.vae_type, vae, latent)
@@ -151,12 +161,17 @@ def log_validation(accelerator, config, model, logger, step, device, vae=None, i
         return current_image_logs
 
     # First run with original noise
-    image_logs += run_sampling(init_z=None, label_suffix="", vae=vae, sampler=vis_sampler)
+    image_logs += run_sampling(init_z=None, label_suffix="", sampler=vis_sampler)
 
     # Second run with init_noise if provided
     if init_noise is not None:
         init_noise = torch.clone(init_noise).to(device)
-        image_logs += run_sampling(init_z=init_noise, label_suffix=" w/ init noise", vae=vae, sampler=vis_sampler)
+        image_logs += run_sampling(init_z=init_noise, label_suffix=" w/ init noise", sampler=vis_sampler)
+
+    if del_vae:
+        vae = None
+        gc.collect()
+        torch.cuda.empty_cache()
 
     formatted_images = []
     for log in image_logs:
@@ -188,13 +203,13 @@ def log_validation(accelerator, config, model, logger, step, device, vae=None, i
 
         widths, heights = zip(*(img.size for img in images))
         max_width = max(widths)
-        total_height = sum(heights[i : i + images_per_row][0] for i in range(0, len(images), images_per_row))
+        total_height = sum(heights[i: i + images_per_row][0] for i in range(0, len(images), images_per_row))
 
         new_im = Image.new("RGB", (max_width * images_per_row, total_height))
 
         y_offset = 0
         for i in range(0, len(images), images_per_row):
-            row_images = images[i : i + images_per_row]
+            row_images = images[i: i + images_per_row]
             x_offset = 0
             for img in row_images:
                 new_im.paste(img, (x_offset, y_offset))
@@ -225,135 +240,207 @@ def log_validation(accelerator, config, model, logger, step, device, vae=None, i
     return image_logs
 
 
-def train(config, args, accelerator, model, optimizer, lr_scheduler, train_dataloader, train_diffusion, logger):
+class RatioBucketsDataset:
+    def __init__(self, buckets_file):
+        with open(buckets_file) as file:
+            self.buckets = json.load(file)
+
+    def __getitem__(self, idx):
+        while True:
+            loader = random.choice(self.loaders)
+
+            try:
+                return next(loader)
+            except StopIteration:
+                self.loaders.remove(loader)
+                logger.info(f"bucket ended, {len(self.loaders)}")
+
+    def __len__(self):
+        return self.size
+
+    def make_loaders(self, batch_size):
+        self.loaders = []
+        self.size = 0
+        for bucket in self.buckets.keys():
+            dataset = ImageDataset(self.buckets[bucket])
+
+            loader = torch.utils.data.DataLoader(
+                dataset, batch_size=batch_size, shuffle=True, pin_memory=False, drop_last=False
+            )
+            self.loaders.append(iter(loader))
+            self.size += math.ceil(len(dataset) / batch_size)
+
+
+class ImageDataset(torch.utils.data.Dataset):
+    def __init__(self, images):
+        self.images = images
+
+    def getdata(self, idx):
+        path = self.images[idx]
+        filename_wo_ext = os.path.splitext(os.path.basename(path))[0]
+
+        text_file = os.path.join(os.path.dirname(path), f"{filename_wo_ext}.txt")
+        with open(text_file) as file:
+            prompt = file.read()
+
+        cache_file = os.path.join(os.path.dirname(path), f"{filename_wo_ext}_img.npz")
+        cached_data = torch.load(cache_file)
+
+        size = cached_data["prefsize"]
+        ratio = cached_data["ratio"]
+        vae_embed = cached_data["img"]
+
+        data_info = {
+            "img_hw": size,
+            "aspect_ratio": torch.tensor(ratio.item()),
+        }
+
+        return (
+            vae_embed,
+            data_info,
+            prompt,
+        )
+
+    def __getitem__(self, idx):
+        for _ in range(10):
+            try:
+                data = self.getdata(idx)
+                return data
+            except Exception as e:
+                logger.error(f"Error details: {str(e)}")
+                idx = idx + 1
+        raise RuntimeError("Too many bad data.")
+
+    def __len__(self):
+        return len(self.images)
+
+def compute_lr(step):
+    """
+    Compute the learning rate based on the current step using a sinusoidal wave.
+    
+    Args:
+        step (int): Current training step.
+        base_lr (float): The initial/base learning rate.
+        peak_lr (float): The maximum learning rate.
+        min_lr (float): The minimum learning rate.
+        wavelength (int): The number of steps for one full sinusoidal cycle.
+    
+    Returns:
+        float: The calculated learning rate for the current step.
+    """
+    peak_lr = 8e-5
+    min_lr = 4e-5
+    wavelength = 200
+    # Compute the progress within the current cycle (0 to 1)
+    progress = (step % wavelength) / wavelength
+    
+    # Sinusoidal function to adjust LR
+    lr_range = peak_lr - min_lr
+    current_lr = (
+        min_lr +
+        lr_range / 2 * (1 + math.sin(2 * math.pi * progress - math.pi / 2))
+    )
+    return current_lr / 5.0e-5
+
+def train(config, args, accelerator, model, optimizer, lr_scheduler, dataset, train_diffusion):
     if getattr(config.train, "debug_nan", False):
         DebugUnderflowOverflow(model)
         logger.info("NaN debugger registered. Start to detect overflow during training.")
     log_buffer = LogBuffer()
 
-    global_step = start_step + 1
-    skip_step = max(config.train.skip_step, global_step) % train_dataloader_len
-    skip_step = skip_step if skip_step < (train_dataloader_len - 20) else 0
-    loss_nan_timer = 0
+    def check_nan_inf(model):
+        for name, param in model.named_parameters():
+            if torch.isnan(param).any() or torch.isinf(param).any():
+                logger.error(f"NaN/Inf detected in {name}")
 
-    # Cache Dataset for BatchSampler
-    if args.caching and config.model.multi_scale:
-        caching_start = time.time()
-        logger.info(
-            f"Start caching your dataset for batch_sampler at {cache_file}. \n"
-            f"This may take a lot of time...No training will launch"
-        )
-        train_dataloader.batch_sampler.sampler.set_start(max(train_dataloader.batch_sampler.exist_ids, 0))
+    check_nan_inf(model)
+
+    def save_model(save_metric=True):
         accelerator.wait_for_everyone()
-        for index, _ in enumerate(train_dataloader):
-            accelerator.wait_for_everyone()
-            if index % 2000 == 0:
-                logger.info(
-                    f"rank: {rank}, Cached file len: {len(train_dataloader.batch_sampler.cached_idx)} / {len(train_dataloader)}"
-                )
-                print(
-                    f"rank: {rank}, Cached file len: {len(train_dataloader.batch_sampler.cached_idx)} / {len(train_dataloader)}"
-                )
-            if (time.time() - caching_start) / 3600 > 3.7:
-                json.dump(train_dataloader.batch_sampler.cached_idx, open(cache_file, "w"), indent=4)
-                accelerator.wait_for_everyone()
-                break
-            if len(train_dataloader.batch_sampler.cached_idx) == len(train_dataloader) - 1000:
-                logger.info(
-                    f"Saving rank: {rank}, Cached file len: {len(train_dataloader.batch_sampler.cached_idx)} / {len(train_dataloader)}"
-                )
-                json.dump(train_dataloader.batch_sampler.cached_idx, open(cache_file, "w"), indent=4)
-            accelerator.wait_for_everyone()
-            continue
-        accelerator.wait_for_everyone()
-        print(f"Saving rank-{rank} Cached file len: {len(train_dataloader.batch_sampler.cached_idx)}")
-        json.dump(train_dataloader.batch_sampler.cached_idx, open(cache_file, "w"), indent=4)
-        return
+        if accelerator.is_main_process:
+            os.umask(0o000)
+            checkpoints_dir = osp.join(config.work_dir, "checkpoints")
+
+            # Remove all old checkpoint files in the directory
+            if os.path.exists(checkpoints_dir):
+                for filename in os.listdir(checkpoints_dir):
+                    file_path = osp.join(checkpoints_dir, filename)
+                    if os.path.isfile(file_path):
+                        os.remove(file_path)
+
+            ckpt_saved_path = save_checkpoint(
+                checkpoints_dir,
+                epoch=epoch,
+                step=global_step,
+                model=accelerator.unwrap_model(model),
+                optimizer=optimizer,
+                lr_scheduler=lr_scheduler,
+                generator=generator,
+                add_symlink=True,
+            )
+            
+            torch.save(accelerator.unwrap_model(text_encoder).state_dict(), osp.join(checkpoints_dir, "te.pth"))
+                        
+            if save_metric:
+                online_metric_monitor_dir = osp.join(config.work_dir, config.train.online_metric_dir)
+                os.makedirs(online_metric_monitor_dir, exist_ok=True)
+                with open(f"{online_metric_monitor_dir}/{ckpt_saved_path.split('/')[-1]}.txt", "w") as f:
+                    f.write(osp.join(config.work_dir, "config.py") + "\n")
+                    f.write(ckpt_saved_path)
+
+    global_step = start_step + 1
+    skip_step = max(config.train.skip_step, global_step) % len(dataset)
+    skip_step = skip_step if skip_step < (len(dataset) - 20) else 0
+    loss_nan_timer = 0
 
     # Now you train the model
     for epoch in range(start_epoch + 1, config.train.num_epochs + 1):
         time_start, last_tic = time.time(), time.time()
-        sampler = (
-            train_dataloader.batch_sampler.sampler
-            if (num_replicas > 1 or config.model.multi_scale)
-            else train_dataloader.sampler
-        )
-        sampler.set_epoch(epoch)
-        sampler.set_start(max((skip_step - 1) * config.train.train_batch_size, 0))
         if skip_step > 1 and accelerator.is_main_process:
             logger.info(f"Skipped Steps: {skip_step}")
         skip_step = 1
         data_time_start = time.time()
         data_time_all = 0
         lm_time_all = 0
-        vae_time_all = 0
         model_time_all = 0
-        for step, batch in enumerate(train_dataloader):
+        optimizer_time_all = 0
+        dataset.make_loaders(config.train.train_batch_size)
+        for step, batch in enumerate(dataset):
             # image, json_info, key = batch
             accelerator.wait_for_everyone()
             data_time_all += time.time() - data_time_start
-            vae_time_start = time.time()
-            if load_vae_feat:
-                z = batch[0].to(accelerator.device)
-            else:
-                with torch.no_grad():
-                    with torch.amp.autocast(
-                        "cuda",
-                        enabled=(config.model.mixed_precision == "fp16" or config.model.mixed_precision == "bf16"),
-                    ):
-                        z = vae_encode(
-                            config.vae.vae_type, vae, batch[0], config.vae.sample_posterior, accelerator.device
-                        )
+            z = batch[0].to(accelerator.device)
 
             accelerator.wait_for_everyone()
-            vae_time_all += time.time() - vae_time_start
 
             clean_images = z
-            data_info = batch[3]
+            data_info = batch[1]
 
             lm_time_start = time.time()
-            if load_text_feat:
-                y = batch[1]  # bs, 1, N, C
-                y_mask = batch[2]  # bs, 1, 1, N
-            else:
-                if "T5" in config.text_encoder.text_encoder_name:
-                    with torch.no_grad():
-                        txt_tokens = tokenizer(
-                            batch[1], max_length=max_length, padding="max_length", truncation=True, return_tensors="pt"
-                        ).to(accelerator.device)
-                        y = text_encoder(txt_tokens.input_ids, attention_mask=txt_tokens.attention_mask)[0][:, None]
-                        y_mask = txt_tokens.attention_mask[:, None, None]
-                elif (
-                    "gemma" in config.text_encoder.text_encoder_name or "Qwen" in config.text_encoder.text_encoder_name
-                ):
-                    with torch.no_grad():
-                        if not config.text_encoder.chi_prompt:
-                            max_length_all = config.text_encoder.model_max_length
-                            prompt = batch[1]
-                        else:
-                            chi_prompt = "\n".join(config.text_encoder.chi_prompt)
-                            prompt = [chi_prompt + i for i in batch[1]]
-                            num_chi_prompt_tokens = len(tokenizer.encode(chi_prompt))
-                            max_length_all = (
-                                num_chi_prompt_tokens + config.text_encoder.model_max_length - 2
-                            )  # magic number 2: [bos], [_]
-                        txt_tokens = tokenizer(
-                            prompt,
-                            padding="max_length",
-                            max_length=max_length_all,
-                            truncation=True,
-                            return_tensors="pt",
-                        ).to(accelerator.device)
-                        select_index = [0] + list(
-                            range(-config.text_encoder.model_max_length + 1, 0)
-                        )  # first bos and end N-1
-                        y = text_encoder(txt_tokens.input_ids, attention_mask=txt_tokens.attention_mask)[0][:, None][
-                            :, :, select_index
-                        ]
-                        y_mask = txt_tokens.attention_mask[:, None, None][:, :, :, select_index]
-                else:
-                    print("error")
-                    exit()
+            prompts = list(batch[2])
+            shuffled_prompts = []
+            for prompt in prompts:
+                tags = prompt.split(",")  # Split the string into a list of tags
+                random.shuffle(tags)  # Shuffle the tags
+                shuffled_prompts.append(",".join(tags))  # Join them back into a string
+
+            #with torch.no_grad():
+            select_index = [0] + list(
+                    range(-config.text_encoder.model_max_length + 1, 0)
+                )
+
+            txt_tokens = tokenizer(
+                prompts,
+                padding="max_length",
+                max_length=64,
+                truncation=True,
+                return_tensors="pt",
+                return_attention_mask=True
+            ).to(accelerator.device)
+            y = text_encoder(txt_tokens.input_ids, attention_mask=txt_tokens.attention_mask, output_hidden_states=False, output_attentions=False).last_hidden_state[:, None][
+                    :, :, select_index
+                    ]
+            y_mask = txt_tokens.attention_mask[:, None, None][:, :, :, select_index]
 
             # Sample a random timestep for each image
             bs = clean_images.shape[0]
@@ -381,16 +468,24 @@ def train(config, args, accelerator, model, optimizer, lr_scheduler, train_datal
                     model, clean_images, timesteps, model_kwargs=dict(y=y, mask=y_mask, data_info=data_info)
                 )
                 loss = loss_term["loss"].mean()
+
+                # Check if the loss is NaN
+                if torch.isnan(loss):
+                    loss_nan_timer += 1
+                    logger.warning(f"Skip nan: {loss_nan_timer}")
+                    continue  # Skip the rest of the loop iteration if loss is NaN
+
                 accelerator.backward(loss)
                 if accelerator.sync_gradients:
                     grad_norm = accelerator.clip_grad_norm_(model.parameters(), config.train.gradient_clip)
+
+                model_time_all += time.time() - model_time_start
+                optimizer_time_start = time.time()
                 optimizer.step()
+                optimizer_time_all += time.time() - optimizer_time_start
                 lr_scheduler.step()
                 accelerator.wait_for_everyone()
-                model_time_all += time.time() - model_time_start
 
-            if torch.any(torch.isnan(loss)):
-                loss_nan_timer += 1
             lr = lr_scheduler.get_last_lr()[0]
             logs = {args.loss_report_name: accelerator.gather(loss).mean().item()}
             if grad_norm is not None:
@@ -401,28 +496,23 @@ def train(config, args, accelerator, model, optimizer, lr_scheduler, train_datal
                 t = (time.time() - last_tic) / config.train.log_interval
                 t_d = data_time_all / config.train.log_interval
                 t_m = model_time_all / config.train.log_interval
+                t_opt = optimizer_time_all / config.train.log_interval
                 t_lm = lm_time_all / config.train.log_interval
-                t_vae = vae_time_all / config.train.log_interval
                 avg_time = (time.time() - time_start) / (step + 1)
                 eta = str(datetime.timedelta(seconds=int(avg_time * (total_steps - global_step - 1))))
                 eta_epoch = str(
                     datetime.timedelta(
-                        seconds=int(
-                            avg_time
-                            * (train_dataloader_len - sampler.step_start // config.train.train_batch_size - step - 1)
-                        )
+                        seconds=int(avg_time * (len(dataset) - step // config.train.train_batch_size - step - 1))
                     )
                 )
                 log_buffer.average()
 
-                current_step = (
-                    global_step - sampler.step_start // config.train.train_batch_size
-                ) % train_dataloader_len
-                current_step = train_dataloader_len if current_step == 0 else current_step
+                current_step = (global_step - step // config.train.train_batch_size) % len(dataset)
+                current_step = len(dataset) if current_step == 0 else current_step
                 info = (
-                    f"Epoch: {epoch} | Global Step: {global_step} | Local Step: {current_step} // {train_dataloader_len}, "
-                    f"total_eta: {eta}, epoch_eta:{eta_epoch}, time: all:{t:.3f}, model:{t_m:.3f}, data:{t_d:.3f}, "
-                    f"lm:{t_lm:.3f}, vae:{t_vae:.3f}, lr:{lr:.3e}, Cap: {batch[5][0]}, "
+                    f"Epoch: {epoch} | Global Step: {global_step} | Local Step: {current_step} // {len(dataset)}, "
+                    f"total_eta: {eta}, epoch_eta:{eta_epoch}, time: all:{t:.3f}, model:{t_m:.3f}, optimizer:{t_opt:.3f}, data:{t_d:.3f}, "
+                    f"lm:{t_lm:.3f}, lr:{lr:.3e}, "
                 )
                 info += (
                     f"s:({model.module.h}, {model.module.w}), "
@@ -435,8 +525,8 @@ def train(config, args, accelerator, model, optimizer, lr_scheduler, train_datal
                 log_buffer.clear()
                 data_time_all = 0
                 model_time_all = 0
+                optimizer_time_all = 0
                 lm_time_all = 0
-                vae_time_all = 0
                 if accelerator.is_main_process:
                     logger.info(info)
 
@@ -448,99 +538,49 @@ def train(config, args, accelerator, model, optimizer, lr_scheduler, train_datal
 
             if loss_nan_timer > 20:
                 raise ValueError("Loss is NaN too much times. Break here.")
-            if (
-                global_step % config.train.save_model_steps == 0
-                or (time.time() - training_start_time) / 3600 > config.train.training_hours
-            ):
-                accelerator.wait_for_everyone()
-                if accelerator.is_main_process:
-                    os.umask(0o000)
-                    ckpt_saved_path = save_checkpoint(
-                        osp.join(config.work_dir, "checkpoints"),
-                        epoch=epoch,
-                        step=global_step,
-                        model=accelerator.unwrap_model(model),
-                        optimizer=optimizer,
-                        lr_scheduler=lr_scheduler,
-                        generator=generator,
-                        add_symlink=True,
-                    )
-                    if config.train.online_metric and global_step % config.train.eval_metric_step == 0 and step > 1:
-                        online_metric_monitor_dir = osp.join(config.work_dir, config.train.online_metric_dir)
-                        os.makedirs(online_metric_monitor_dir, exist_ok=True)
-                        with open(f"{online_metric_monitor_dir}/{ckpt_saved_path.split('/')[-1]}.txt", "w") as f:
-                            f.write(osp.join(config.work_dir, "config.py") + "\n")
-                            f.write(ckpt_saved_path)
+            if global_step % config.train.save_model_steps == 0:
+                save_model(config.train.online_metric and global_step % config.train.eval_metric_step == 0 and step > 1)
 
-                if (time.time() - training_start_time) / 3600 > config.train.training_hours:
-                    logger.info(f"Stopping training at epoch {epoch}, step {global_step} due to time limit.")
-                    return
+                # if (time.time() - training_start_time) / 3600 > 3.8:
+                #     logger.info(f"Stopping training at epoch {epoch}, step {global_step} due to time limit.")
+                #     return
             if config.train.visualize and (global_step % config.train.eval_sampling_steps == 0 or (step + 1) == 1):
                 accelerator.wait_for_everyone()
                 if accelerator.is_main_process:
                     if validation_noise is not None:
-                        log_validation(
+                        idation(
                             accelerator=accelerator,
                             config=config,
                             model=model,
-                            logger=logger,
                             step=global_step,
                             device=accelerator.device,
                             vae=vae,
                             init_noise=validation_noise,
                         )
                     else:
-                        log_validation(
+                        idation(
                             accelerator=accelerator,
                             config=config,
                             model=model,
-                            logger=logger,
                             step=global_step,
                             device=accelerator.device,
                             vae=vae,
                         )
 
-            # avoid dead-lock of multiscale data batch sampler
-            # for internal, refactor dataloader logic to remove the ad-hoc implementation
-            if (
-                config.model.multi_scale
-                and (train_dataloader_len - sampler.step_start // config.train.train_batch_size - step) < 30
-            ):
-                global_step = epoch * train_dataloader_len
-                logger.info("Early stop current iteration")
-                break
-
             data_time_start = time.time()
 
         if epoch % config.train.save_model_epochs == 0 or epoch == config.train.num_epochs and not config.debug:
-            accelerator.wait_for_everyone()
-            if accelerator.is_main_process:
-                # os.umask(0o000)
-                ckpt_saved_path = save_checkpoint(
-                    osp.join(config.work_dir, "checkpoints"),
-                    epoch=epoch,
-                    step=global_step,
-                    model=accelerator.unwrap_model(model),
-                    optimizer=optimizer,
-                    lr_scheduler=lr_scheduler,
-                    generator=generator,
-                    add_symlink=True,
-                )
-
-                online_metric_monitor_dir = osp.join(config.work_dir, config.train.online_metric_dir)
-                os.makedirs(online_metric_monitor_dir, exist_ok=True)
-                with open(f"{online_metric_monitor_dir}/{ckpt_saved_path.split('/')[-1]}.txt", "w") as f:
-                    f.write(osp.join(config.work_dir, "config.py") + "\n")
-                    f.write(ckpt_saved_path)
+            save_model()
         accelerator.wait_for_everyone()
+    save_model()
 
 
 @pyrallis.wrap()
 def main(cfg: SanaConfig) -> None:
-    global train_dataloader_len, start_epoch, start_step, vae, generator, num_replicas, rank, training_start_time
-    global load_vae_feat, load_text_feat, validation_noise, text_encoder, tokenizer
+    global start_epoch, start_step, vae, generator, num_replicas, rank, training_start_time
+    global load_vae_feat, load_text_feat, validation_noise, text_encoder, tokenizer, logger
     global max_length, validation_prompts, latent_size, valid_prompt_embed_suffix, null_embed_path
-    global image_size, cache_file, total_steps
+    global image_size, total_steps
 
     config = cfg
     args = cfg
@@ -553,8 +593,8 @@ def main(cfg: SanaConfig) -> None:
         config.model.resume_from = dict(
             checkpoint=args.resume_from or config.model.resume_from,
             load_ema=False,
-            resume_optimizer=True,
-            resume_lr_scheduler=True,
+            resume_optimizer=False,
+            resume_lr_scheduler=False,
         )
 
     if args.debug:
@@ -602,7 +642,6 @@ def main(cfg: SanaConfig) -> None:
         pyrallis.dump(config, open(osp.join(config.work_dir, "config.yaml"), "w"), sort_keys=False, indent=4)
         if args.report_to == "wandb":
             import wandb
-
             wandb.init(project=args.tracker_project_name, name=args.name, resume="allow", id=args.name)
 
     logger.info(f"Config: \n{config}")
@@ -619,14 +658,17 @@ def main(cfg: SanaConfig) -> None:
         if getattr(config.train, "deterministic_validation", False)
         else None
     )
-    if not config.data.load_vae_feat:
-        vae = get_vae(config.vae.vae_type, config.vae.vae_pretrained, accelerator.device).to(torch.float16)
+
     tokenizer = text_encoder = None
     if not config.data.load_text_feat:
-        tokenizer, text_encoder = get_tokenizer_and_text_encoder(
-            name=config.text_encoder.text_encoder_name, device=accelerator.device
-        )
-        text_embed_dim = text_encoder.config.hidden_size
+        tokenizer = AutoTokenizer.from_pretrained("google/siglip-so400m-patch14-384")
+        text_encoder = SiglipTextModel.from_pretrained("google/siglip-so400m-patch14-384").to(accelerator.device)
+        text_encoder.load_state_dict(torch.load('/home/Sana/output/debug/checkpoints/te.pth'))
+        text_encoder.train()
+        for param in text_encoder.text_model.head.parameters():
+            param.requires_grad = False
+        #text_encoder.requires_grad_(False)
+        text_embed_dim = 1152
     else:
         text_embed_dim = config.text_encoder.caption_channels
 
@@ -677,34 +719,26 @@ def main(cfg: SanaConfig) -> None:
                 )
                 if "T5" in config.text_encoder.text_encoder_name:
                     txt_tokens = tokenizer(
-                        prompt, max_length=max_length, padding="max_length", truncation=True, return_tensors="pt"
+                        prompt, max_length=max_length, padding="max_length", truncation=True, return_tensors="pt",
+						return_attention_mask=True
                     ).to(accelerator.device)
                     caption_emb = text_encoder(txt_tokens.input_ids, attention_mask=txt_tokens.attention_mask)[0]
                     caption_emb_mask = txt_tokens.attention_mask
                 elif (
-                    "gemma" in config.text_encoder.text_encoder_name or "Qwen" in config.text_encoder.text_encoder_name
+                        "gemma" in config.text_encoder.text_encoder_name or "Qwen" in config.text_encoder.text_encoder_name
                 ):
-                    if not config.text_encoder.chi_prompt:
-                        max_length_all = config.text_encoder.model_max_length
-                    else:
-                        chi_prompt = "\n".join(config.text_encoder.chi_prompt)
-                        prompt = chi_prompt + prompt
-                        num_chi_prompt_tokens = len(tokenizer.encode(chi_prompt))
-                        max_length_all = (
-                            num_chi_prompt_tokens + config.text_encoder.model_max_length - 2
-                        )  # magic number 2: [bos], [_]
-
                     txt_tokens = tokenizer(
                         prompt,
-                        max_length=max_length_all,
+                        max_length=64,
                         padding="max_length",
                         truncation=True,
                         return_tensors="pt",
+						return_attention_mask=True
                     ).to(accelerator.device)
                     select_index = [0] + list(range(-config.text_encoder.model_max_length + 1, 0))
                     caption_emb = text_encoder(txt_tokens.input_ids, attention_mask=txt_tokens.attention_mask)[0][
-                        :, select_index
-                    ]
+                                  :, select_index
+                                  ]
                     caption_emb_mask = txt_tokens.attention_mask[:, select_index]
                 else:
                     raise ValueError(f"{config.text_encoder.text_encoder_name} is not supported!!")
@@ -712,7 +746,13 @@ def main(cfg: SanaConfig) -> None:
                 torch.save({"caption_embeds": caption_emb, "emb_mask": caption_emb_mask}, prompt_embed_path)
 
             null_tokens = tokenizer(
-                "", max_length=max_length, padding="max_length", truncation=True, return_tensors="pt"
+                #"bad,ugly,bad quality,worst,poorly drawn,sketch",
+                "blurry",
+                max_length=max_length,
+                padding="max_length",
+                truncation=True,
+                return_tensors="pt",
+						return_attention_mask=True
             ).to(accelerator.device)
             if "T5" in config.text_encoder.text_encoder_name:
                 null_token_emb = text_encoder(null_tokens.input_ids, attention_mask=null_tokens.attention_mask)[0]
@@ -780,6 +820,7 @@ def main(cfg: SanaConfig) -> None:
         input_size=latent_size,
         **model_kwargs,
     ).train()
+
     logger.info(
         colored(
             f"{model.__class__.__name__}:{config.model.model}, "
@@ -798,8 +839,10 @@ def main(cfg: SanaConfig) -> None:
             load_ema=config.model.resume_from.get("load_ema", False),
             null_embed_path=null_embed_path,
         )
-        logger.warning(f"Missing keys: {missing}")
-        logger.warning(f"Unexpected keys: {unexpected}")
+        if missing:
+            logger.warning(f"Missing keys: {missing}")
+        if unexpected:
+            logger.warning(f"Unexpected keys: {unexpected}")
 
     # prepare for FSDP clip grad norm calculation
     if accelerator.distributed_type == DistributedType.FSDP:
@@ -814,81 +857,27 @@ def main(cfg: SanaConfig) -> None:
     ]
     num_replicas = int(os.environ["WORLD_SIZE"])
     rank = int(os.environ["RANK"])
-    dataset = build_dataset(
-        asdict(config.data),
-        resolution=image_size,
-        aspect_ratio_type=config.model.aspect_ratio_type,
-        real_prompt_ratio=config.train.real_prompt_ratio,
-        max_length=max_length,
-        config=config,
-        caption_proportion=config.data.caption_proportion,
-        sort_dataset=config.data.sort_dataset,
-        vae_downsample_rate=config.vae.vae_downsample_rate,
-    )
+    dataset = RatioBucketsDataset(config.data.buckets_file)
     accelerator.wait_for_everyone()
-    if config.model.multi_scale:
-        drop_last = True
-        uuid = hashlib.sha256("-".join(config.data.data_dir).encode()).hexdigest()[:8]
-        cache_dir = osp.expanduser(f"~/.cache/_wids_batchsampler_cache")
-        os.makedirs(cache_dir, exist_ok=True)
-        base_pattern = (
-            f"{cache_dir}/{getpass.getuser()}-{uuid}-sort_dataset{config.data.sort_dataset}"
-            f"-hq_only{config.data.hq_only}-valid_num{config.data.valid_num}"
-            f"-aspect_ratio{len(dataset.aspect_ratio)}-droplast{drop_last}"
-            f"dataset_len{len(dataset)}"
-        )
-        cache_file = f"{base_pattern}-num_replicas{num_replicas}-rank{rank}"
-        for i in config.data.data_dir:
-            cache_file += f"-{i}"
-        cache_file += ".json"
+    dataset.make_loaders(batch_size=config.train.train_batch_size)
 
-        sampler = DistributedRangedSampler(dataset, num_replicas=num_replicas, rank=rank)
-        batch_sampler = AspectRatioBatchSampler(
-            sampler=sampler,
-            dataset=dataset,
-            batch_size=config.train.train_batch_size,
-            aspect_ratios=dataset.aspect_ratio,
-            drop_last=drop_last,
-            ratio_nums=dataset.ratio_nums,
-            config=config,
-            valid_num=config.data.valid_num,
-            hq_only=config.data.hq_only,
-            cache_file=cache_file,
-            caching=args.caching,
-        )
-        train_dataloader = build_dataloader(dataset, batch_sampler=batch_sampler, num_workers=config.train.num_workers)
-        train_dataloader_len = len(train_dataloader)
-        logger.info(f"rank-{rank} Cached file len: {len(train_dataloader.batch_sampler.cached_idx)}")
-    else:
-        sampler = DistributedRangedSampler(dataset, num_replicas=num_replicas, rank=rank)
-        train_dataloader = build_dataloader(
-            dataset,
-            num_workers=config.train.num_workers,
-            batch_size=config.train.train_batch_size,
-            shuffle=False,
-            sampler=sampler,
-        )
-        train_dataloader_len = len(train_dataloader)
-    load_vae_feat = getattr(train_dataloader.dataset, "load_vae_feat", False)
-    load_text_feat = getattr(train_dataloader.dataset, "load_text_feat", False)
+    load_vae_feat = getattr(dataset, "load_vae_feat", False)
+    load_text_feat = getattr(dataset, "load_text_feat", False)
 
-    # 4. build optimizer and lr scheduler
-    lr_scale_ratio = 1
-    if getattr(config.train, "auto_lr", None):
-        lr_scale_ratio = auto_scale_lr(
-            config.train.train_batch_size * get_world_size() * config.train.gradient_accumulation_steps,
-            config.train.optimizer,
-            **config.train.auto_lr,
-        )
     optimizer = build_optimizer(model, config.train.optimizer)
+    optimizer.add_param_group({'params': text_encoder.parameters(), 'lr': 5e-6})
+
     if config.train.lr_schedule_args and config.train.lr_schedule_args.get("num_warmup_steps", None):
         config.train.lr_schedule_args["num_warmup_steps"] = (
-            config.train.lr_schedule_args["num_warmup_steps"] * num_replicas
+                config.train.lr_schedule_args["num_warmup_steps"] * num_replicas
         )
-    lr_scheduler = build_lr_scheduler(config.train, optimizer, train_dataloader, lr_scale_ratio)
+    #lr_scheduler = build_lr_scheduler(config.train, optimizer, dataset, 1)
+    from torch.optim.lr_scheduler import LambdaLR
+    lr_scheduler = LambdaLR(optimizer, compute_lr)
+
     logger.warning(
         f"{colored(f'Basic Setting: ', 'green', attrs=['bold'])}"
-        f"lr: {config.train.optimizer['lr']:.5f}, bs: {config.train.train_batch_size}, gc: {config.train.grad_checkpointing}, "
+        f"lr: {config.train.optimizer['lr']:.9f}, bs: {config.train.train_batch_size}, gc: {config.train.grad_checkpointing}, "
         f"gc_accum_step: {config.train.gradient_accumulation_steps}, qk norm: {config.model.qk_norm}, "
         f"fp32 attn: {config.model.fp32_attention}, attn type: {config.model.attn_type}, ffn type: {config.model.ffn_type}, "
         f"text encoder: {config.text_encoder.text_encoder_name}, captions: {config.data.caption_proportion}, precision: {config.model.mixed_precision}"
@@ -905,7 +894,7 @@ def main(cfg: SanaConfig) -> None:
 
     start_epoch = 0
     start_step = 0
-    total_steps = train_dataloader_len * config.train.num_epochs
+    total_steps = len(dataset) * config.train.num_epochs
 
     # Resume training
     if config.model.resume_from is not None and config.model.resume_from["checkpoint"] is not None:
@@ -933,8 +922,10 @@ def main(cfg: SanaConfig) -> None:
                 null_embed_path=null_embed_path,
             )
 
-            logger.warning(f"Missing keys: {missing}")
-            logger.warning(f"Unexpected keys: {unexpected}")
+            if missing:
+                logger.warning(f"Missing keys: {missing}")
+            if unexpected:
+                logger.warning(f"Unexpected keys: {unexpected}")
 
             path = osp.basename(config.model.resume_from["checkpoint"])
         try:
@@ -955,10 +946,9 @@ def main(cfg: SanaConfig) -> None:
     # Prepare everything
     # There is no specific order to remember, you just need to unpack the
     # objects in the same order you gave them to the prepare method.
-    model = accelerator.prepare(model)
+    model, text_encoder = accelerator.prepare(model, text_encoder)
     optimizer, lr_scheduler = accelerator.prepare(optimizer, lr_scheduler)
 
-    # Start Training
     train(
         config=config,
         args=args,
@@ -966,12 +956,10 @@ def main(cfg: SanaConfig) -> None:
         model=model,
         optimizer=optimizer,
         lr_scheduler=lr_scheduler,
-        train_dataloader=train_dataloader,
-        train_diffusion=train_diffusion,
-        logger=logger,
+        dataset=dataset,
+        train_diffusion=train_diffusion
     )
 
 
 if __name__ == "__main__":
-
     main()
