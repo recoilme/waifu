@@ -19,7 +19,6 @@ from diffusion.utils.config import SanaConfig
 @pyrallis.wrap()
 def main(config: SanaConfig) -> None:
     buckets_file = "buckets.json"
-    print("is",config.model.image_size)
     preferred_pixel_count = config.model.image_size * config.model.image_size
 
     min_size = config.model.image_size // 2#1.6
@@ -35,7 +34,6 @@ def main(config: SanaConfig) -> None:
                 width -= mod
             else:
                 width += step - mod
-        print("22",preferred_pixel_count,min_size, width)
         ratio = min_size / width
 
         ratios_array.append((ratio, (int(min_size), width)))

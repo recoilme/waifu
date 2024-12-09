@@ -861,7 +861,7 @@ def main(cfg: SanaConfig) -> None:
     rank = 0 #torch.distributed.get_rank()
     if os.environ.get('RANK') is not None:
         rank = int(os.environ["RANK"])
-    dataset = RatioBucketsDataset(config.data.buckets_file)
+    dataset = RatioBucketsDataset("buckets.json")
     accelerator.wait_for_everyone()
     dataset.make_loaders(batch_size=config.train.train_batch_size)
 
