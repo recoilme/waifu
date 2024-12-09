@@ -50,7 +50,6 @@ train:
   online_metric_dir: metric_helper
 # model config
 model:
-  buckets_file: buckets_file
   model: SanaMS_600M_P1_D28
   image_size: 256
   aspect_ratio_type: ASPECT_RATIO_256

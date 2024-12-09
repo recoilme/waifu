@@ -23,7 +23,6 @@ class BaseConfig:
 @dataclass
 class DataConfig(BaseConfig):
     data_dir: List[Optional[str]] = field(default_factory=list)
-    buckets_file: str = "buckets.json"
     caption_proportion: Dict[str, int] = field(default_factory=lambda: {"prompt": 1})
     external_caption_suffixes: List[str] = field(default_factory=list)
     external_clipscore_suffixes: List[str] = field(default_factory=list)
@@ -44,7 +43,6 @@ class DataConfig(BaseConfig):
 @dataclass
 class ModelConfig(BaseConfig):
     model: str = "SanaMS_600M_P1_D28"
-    buckets_file: str = "buckets.json"
     image_size: int = 512
     mixed_precision: str = "fp16"  # ['fp16', 'fp32', 'bf16']
     fp32_attention: bool = True
@@ -192,4 +190,5 @@ class SanaConfig(BaseConfig):
     report_to: str = "wandb"
     tracker_project_name: str = "waifu-baseline"
     name: str = "baseline"
+    buckets_file: str = "buckets.json"
     loss_report_name: str = "loss"
