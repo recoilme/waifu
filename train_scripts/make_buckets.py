@@ -18,7 +18,7 @@ from diffusion.utils.config import SanaConfig
 
 @pyrallis.wrap()
 def main(config: SanaConfig) -> None:
-    print("is"+config.model.image_size)
+    print("is",config.model.image_size)
     preferred_pixel_count = config.model.image_size * config.model.image_size
 
     min_size = config.model.image_size // 1.6
