@@ -190,5 +190,4 @@ class SanaConfig(BaseConfig):
     report_to: str = "wandb"
     tracker_project_name: str = "waifu-baseline"
     name: str = "baseline"
-    buckets_file: str = "buckets.json"
     loss_report_name: str = "loss"

@@ -18,6 +18,7 @@ from diffusion.utils.config import SanaConfig
 
 @pyrallis.wrap()
 def main(config: SanaConfig) -> None:
+    buckets_file = "buckets.json"
     print("is",config.model.image_size)
     preferred_pixel_count = config.model.image_size * config.model.image_size
 
@@ -100,8 +101,8 @@ def main(config: SanaConfig) -> None:
             )
         return z
 
-    if os.path.exists(config.buckets_file):
-        with open(config.buckets_file) as json_file:
+    if os.path.exists(buckets_file):
+        with open(buckets_file) as json_file:
             buckets = json.load(json_file)
             existings_images = set(chain.from_iterable(buckets.values()))
     else:
@@ -136,7 +137,7 @@ def main(config: SanaConfig) -> None:
                     f"{path}/{filename_wo_ext}_img.npz",
                 )
 
-    with open(config.buckets_file, "w") as json_file:
+    with open(buckets_file, "w") as json_file:
         json.dump(buckets, json_file, indent=4)
 
     for ratio in buckets.keys():
