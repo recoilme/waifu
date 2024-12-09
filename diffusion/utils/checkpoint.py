@@ -110,7 +110,9 @@ def load_checkpoint(
     state_dict["y_embedder.y_embedding"] = null_embed["uncond_prompt_embeds"][0]
     rng_state = checkpoint.get("rng_state", None)
 
-    missing, unexpect = model.load_state_dict(state_dict, strict=False)
+    #missing, unexpect = model.load_state_dict(state_dict, strict=False)
+    missing, unexpect = None, None
+    load_safe(model.state_dict(), state_dict)
     if model_ema is not None:
         model_ema.load_state_dict(checkpoint["state_dict_ema"], strict=False)
     if optimizer is not None and resume_optimizer:
@@ -128,3 +130,17 @@ def load_checkpoint(
         return epoch, missing, unexpect, rng_state
     logger.info(f"Load checkpoint from {ckpt_file}. Load ema: {load_ema}.")
     return epoch, missing, unexpect, rng_state
+
+def load_safe(dict1,dict2):
+    logger = get_root_logger()
+    for k in dict1:
+        if k in dict2:
+            if dict1[k].shape != dict2[k].shape:
+                logger.info(f"Skip loading parameter: {k}, "
+                            f"required shape: {dict2[k].shape}, "
+                            f"loaded shape: {dict1[k].shape}")
+            else:
+                dict1[k].copy_(dict2[k])
+
+        else:
+            logger.info(f"Dropping parameter {k}")
