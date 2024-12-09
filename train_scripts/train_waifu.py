@@ -729,7 +729,7 @@ def main(cfg: SanaConfig) -> None:
                 ):
                     txt_tokens = tokenizer(
                         prompt,
-                        max_length=64,
+                        max_length=config.text_encoder.model_max_length,
                         padding="max_length",
                         truncation=True,
                         return_tensors="pt",
@@ -747,7 +747,7 @@ def main(cfg: SanaConfig) -> None:
 
             null_tokens = tokenizer(
                 #"bad,ugly,bad quality,worst,poorly drawn,sketch",
-                "blurry",
+                "",
                 max_length=max_length,
                 padding="max_length",
                 truncation=True,
