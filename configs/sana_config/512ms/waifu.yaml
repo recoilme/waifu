@@ -27,7 +27,7 @@ train:
   log_interval: 20
   save_model_epochs: 1
   save_model_steps: 500
-  work_dir: ../output
+  work_dir: output
   online_metric: false
   eval_metric_step: 2000
   online_metric_dir: metric_helper
