@@ -36,7 +36,7 @@ model:
   aspect_ratio_type: ASPECT_RATIO_256
   mixed_precision: bf16
   fp32_attention: true
-  load_from: output/checkpoints/latest.pth
+  load_from: 
   resume_from:
   multi_scale: true
   attn_type: linear
