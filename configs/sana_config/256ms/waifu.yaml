@@ -4,9 +4,9 @@ data:
 # training setting
 train:
   num_workers: 1
-  seed: 1
-  train_batch_size: 10
-  num_epochs: 1
+  seed: 42
+  train_batch_size: 20
+  num_epochs: 42
   gradient_accumulation_steps: 1
   grad_checkpointing: true
   gradient_clip: 0.2
@@ -24,7 +24,7 @@ train:
   eval_sampling_steps: 500
   log_interval: 20
   save_model_epochs: 1
-  save_model_steps: 500
+  save_model_steps: 1200
   work_dir: output
   online_metric: false
   eval_metric_step: 2000
@@ -36,7 +36,7 @@ model:
   aspect_ratio_type: ASPECT_RATIO_256
   mixed_precision: bf16
   fp32_attention: true
-  load_from:
+  load_from: output/checkpoints/latest.pth
   resume_from:
   multi_scale: true
   attn_type: linear
