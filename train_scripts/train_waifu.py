@@ -746,7 +746,6 @@ def main(cfg: SanaConfig) -> None:
                 torch.save({"caption_embeds": caption_emb, "emb_mask": caption_emb_mask}, prompt_embed_path)
 
             null_tokens = tokenizer(
-                #"bad,ugly,bad quality,worst,poorly drawn,sketch",
                 "",
                 max_length=max_length,
                 padding="max_length",
@@ -757,6 +756,8 @@ def main(cfg: SanaConfig) -> None:
             if "T5" in config.text_encoder.text_encoder_name:
                 null_token_emb = text_encoder(null_tokens.input_ids, attention_mask=null_tokens.attention_mask)[0]
             elif "gemma" in config.text_encoder.text_encoder_name or "Qwen" in config.text_encoder.text_encoder_name:
+                null_token_emb = text_encoder(null_tokens.input_ids, attention_mask=null_tokens.attention_mask)[0]
+            elif "siglip" in config.text_encoder.text_encoder_name:
                 null_token_emb = text_encoder(null_tokens.input_ids, attention_mask=null_tokens.attention_mask)[0]
             else:
                 raise ValueError(f"{config.text_encoder.text_encoder_name} is not supported!!")
