@@ -44,6 +44,7 @@ class DataConfig(BaseConfig):
 @dataclass
 class ModelConfig(BaseConfig):
     model: str = "SanaMS_600M_P1_D28"
+    buckets_file: str = "buckets.json"
     image_size: int = 512
     mixed_precision: str = "fp16"  # ['fp16', 'fp32', 'bf16']
     fp32_attention: bool = True
