@@ -635,7 +635,10 @@ def main(cfg: SanaConfig) -> None:
     logger.info(accelerator.state)
 
     config.train.seed = init_random_seed(getattr(config.train, "seed", None))
-    set_random_seed(config.train.seed + int(os.environ["LOCAL_RANK"]))
+    local_rank = 0
+    if os.environ.get('LOCAL_RANK') is not None:
+        local_rank = int(os.environ["LOCAL_RANK"])
+    set_random_seed(config.train.seed + local_rank)
     generator = torch.Generator(device="cpu").manual_seed(config.train.seed)
 
     if accelerator.is_main_process:
