@@ -100,8 +100,8 @@ def main(config: SanaConfig) -> None:
             )
         return z
 
-    if os.path.exists(config.data.buckets_file):
-        with open(config.data.buckets_file) as json_file:
+    if os.path.exists(config.buckets_file):
+        with open(config.buckets_file) as json_file:
             buckets = json.load(json_file)
             existings_images = set(chain.from_iterable(buckets.values()))
     else:
