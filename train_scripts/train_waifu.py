@@ -725,7 +725,7 @@ def main(cfg: SanaConfig) -> None:
                     caption_emb = text_encoder(txt_tokens.input_ids, attention_mask=txt_tokens.attention_mask)[0]
                     caption_emb_mask = txt_tokens.attention_mask
                 elif (
-                        "gemma" in config.text_encoder.text_encoder_name or "Qwen" in config.text_encoder.text_encoder_name
+                        "gemma" in config.text_encoder.text_encoder_name or "Qwen" in config.text_encoder.text_encoder_name or "siglip" in config.text_encoder.text_encoder_name
                 ):
                     txt_tokens = tokenizer(
                         prompt,
