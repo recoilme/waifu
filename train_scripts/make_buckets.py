@@ -136,7 +136,7 @@ def main(config: SanaConfig) -> None:
                     f"{path}/{filename_wo_ext}_img.npz",
                 )
 
-    with open(config.data.buckets_file, "w") as json_file:
+    with open(config.model.buckets_file, "w") as json_file:
         json.dump(buckets, json_file, indent=4)
 
     for ratio in buckets.keys():

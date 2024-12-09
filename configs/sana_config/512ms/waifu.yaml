@@ -1,3 +1,20 @@
+data:
+  data_dir: [data/data_public/dir1]
+  image_size: 512
+  caption_proportion:
+    prompt: 1
+  external_caption_suffixes: ['', _InternVL2-26B, _VILA1-5-13B]
+  external_clipscore_suffixes:
+    - _InternVL2-26B_clip_score
+    - _VILA1-5-13B_clip_score
+    - _prompt_clip_score
+  clip_thr_temperature: 0.1
+  clip_thr: 25.0
+  load_text_feat: false
+  load_vae_feat: false
+  transform: default_train
+  type: SanaWebDatasetMS
+  sort_dataset: false
 # training setting
 train:
   num_workers: 1
@@ -31,10 +48,9 @@ train:
   online_metric: false
   eval_metric_step: 2000
   online_metric_dir: metric_helper
-data:
-  data_dir: [tst]
 # model config
 model:
+  buckets_file: buckets_file
   model: SanaMS_600M_P1_D28
   image_size: 256
   aspect_ratio_type: ASPECT_RATIO_256
