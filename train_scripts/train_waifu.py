@@ -664,14 +664,11 @@ def main(cfg: SanaConfig) -> None:
 
     tokenizer = text_encoder = None
     if not config.data.load_text_feat:
-        tokenizer = AutoTokenizer.from_pretrained("google/siglip-so400m-patch14-384")
-        text_encoder = SiglipTextModel.from_pretrained("google/siglip-so400m-patch14-384").to(accelerator.device)
-        text_encoder.load_state_dict(torch.load('/home/Sana/output/debug/checkpoints/te.pth'))
-        text_encoder.train()
-        for param in text_encoder.text_model.head.parameters():
-            param.requires_grad = False
-        #text_encoder.requires_grad_(False)
-        text_embed_dim = 1152
+        tokenizer, text_encoder = get_tokenizer_and_text_encoder(
+            name=config.text_encoder.text_encoder_name, device=accelerator.device
+        )
+        text_encoder.requires_grad_(False)
+        text_embed_dim = text_encoder.config.hidden_size
     else:
         text_embed_dim = config.text_encoder.caption_channels
 
