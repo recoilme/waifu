@@ -36,12 +36,12 @@ data:
 # model config
 model:
   model: SanaMS_600M_P1_D28
-  image_size: 512
+  image_size: 256
+  aspect_ratio_type: ASPECT_RATIO_256
   mixed_precision: bf16
   fp32_attention: true
   load_from:
   resume_from:
-  aspect_ratio_type: ASPECT_RATIO_256
   multi_scale: true
   attn_type: linear
   linear_head_dim: 32
