@@ -21,8 +21,8 @@ def main(config: SanaConfig) -> None:
     print("is",config.model.image_size)
     preferred_pixel_count = config.model.image_size * config.model.image_size
 
-    min_size = config.model.image_size // 1.6
-    max_size = config.model.image_size * 1.5
+    min_size = config.model.image_size // 2#1.6
+    max_size = config.model.image_size * 2#1.5
     step = 64
 
     ratios_array = []
@@ -34,7 +34,7 @@ def main(config: SanaConfig) -> None:
                 width -= mod
             else:
                 width += step - mod
-
+        print("22",preferred_pixel_count,min_size, width)
         ratio = min_size / width
 
         ratios_array.append((ratio, (int(min_size), width)))
