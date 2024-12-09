@@ -50,7 +50,6 @@ from diffusion.utils.logger import LogBuffer, get_root_logger
 from diffusion.utils.lr_scheduler import build_lr_scheduler
 from diffusion.utils.misc import DebugUnderflowOverflow, init_random_seed, set_random_seed
 from diffusion.utils.optimizer import build_optimizer
-from transformers import SiglipTextModel, AutoTokenizer
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
