@@ -836,7 +836,7 @@ def main(cfg: SanaConfig) -> None:
         _, missing, unexpected, _ = load_checkpoint(
             config.model.load_from,
             model,
-            load_ema=config.model.resume_from.get("load_ema", False),
+            load_ema=False,#config.model.resume_from.get("load_ema", False),
             null_embed_path=null_embed_path,
         )
         if missing:
