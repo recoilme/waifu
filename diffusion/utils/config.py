@@ -188,6 +188,6 @@ class SanaConfig(BaseConfig):
     debug: bool = False
     caching: bool = False
     report_to: str = "wandb"
-    tracker_project_name: str = "waifu-baseline"
+    tracker_project_name: str = "waifu-2b"
     name: str = "baseline"
     loss_report_name: str = "loss"
