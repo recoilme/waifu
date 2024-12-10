@@ -354,7 +354,7 @@ def train(config, args, accelerator, model, optimizer, lr_scheduler, dataset, tr
 
     check_nan_inf(model)
 
-    def save_model(save_metric=True):
+    def save_model(save_metric=True,save_state=True):
         accelerator.wait_for_everyone()
         if accelerator.is_main_process:
             os.umask(0o000)
@@ -372,11 +372,13 @@ def train(config, args, accelerator, model, optimizer, lr_scheduler, dataset, tr
                 epoch=epoch,
                 step=global_step,
                 model=accelerator.unwrap_model(model),
-                optimizer=optimizer,
-                lr_scheduler=lr_scheduler,
+                optimizer=optimizer if save_state else None,
+                lr_scheduler=lr_scheduler if save_state else None,
+                model_ema=None,
                 generator=generator,
                 add_symlink=True,
             )
+
             
             torch.save(accelerator.unwrap_model(text_encoder).state_dict(), osp.join(checkpoints_dir, "te.pth"))
                         
@@ -569,7 +571,7 @@ def train(config, args, accelerator, model, optimizer, lr_scheduler, dataset, tr
             data_time_start = time.time()
 
         if epoch % config.train.save_model_epochs == 0 or epoch == config.train.num_epochs and not config.debug:
-            save_model()
+            save_model(save_metric=False,save_state=False)
         accelerator.wait_for_everyone()
     save_model()
 
@@ -750,7 +752,7 @@ def main(cfg: SanaConfig) -> None:
                 padding="max_length",
                 truncation=True,
                 return_tensors="pt",
-						return_attention_mask=True
+				return_attention_mask=True
             ).to(accelerator.device)
             if "T5" in config.text_encoder.text_encoder_name:
                 null_token_emb = text_encoder(null_tokens.input_ids, attention_mask=null_tokens.attention_mask)[0]
