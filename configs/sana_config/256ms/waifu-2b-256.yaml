@@ -5,7 +5,7 @@ data:
 train:
   num_workers: 1
   seed: 42
-  train_batch_size: 100
+  train_batch_size: 20
   num_epochs: 16
   gradient_accumulation_steps: 1
   grad_checkpointing: true
@@ -31,7 +31,7 @@ train:
   online_metric_dir: metric_helper
 # model config
 model:
-  model: SanaMS_600M_P1_D28
+  model: SanaMS_1600M_P1_D20
   image_size: 256
   aspect_ratio_type: ASPECT_RATIO_256
   mixed_precision: bf16

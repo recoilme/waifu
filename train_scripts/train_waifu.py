@@ -419,12 +419,6 @@ def train(config, args, accelerator, model, optimizer, lr_scheduler, dataset, tr
 
             lm_time_start = time.time()
             prompts = list(batch[2])
-            shuffled_prompts = []
-            for prompt in prompts:
-                tags = prompt.split(",")  # Split the string into a list of tags
-                random.shuffle(tags)  # Shuffle the tags
-                shuffled_prompts.append(",".join(tags))  # Join them back into a string
-
             #with torch.no_grad():
             select_index = [0] + list(
                     range(-config.text_encoder.model_max_length + 1, 0)
@@ -433,7 +427,7 @@ def train(config, args, accelerator, model, optimizer, lr_scheduler, dataset, tr
             txt_tokens = tokenizer(
                 prompts,
                 padding="max_length",
-                max_length=64,
+                max_length=config.text_encoder.model_max_length,
                 truncation=True,
                 return_tensors="pt",
                 return_attention_mask=True
