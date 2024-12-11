@@ -380,7 +380,7 @@ def train(config, args, accelerator, model, optimizer, lr_scheduler, dataset, tr
             )
 
             
-            torch.save(accelerator.unwrap_model(text_encoder).state_dict(), osp.join(checkpoints_dir, "te.pth"))
+            #torch.save(accelerator.unwrap_model(text_encoder).state_dict(), osp.join(checkpoints_dir, "te.pth"))
                         
             if save_metric:
                 online_metric_monitor_dir = osp.join(config.work_dir, config.train.online_metric_dir)
@@ -865,7 +865,8 @@ def main(cfg: SanaConfig) -> None:
     load_text_feat = getattr(dataset, "load_text_feat", False)
 
     optimizer = build_optimizer(model, config.train.optimizer)
-    optimizer.add_param_group({'params': text_encoder.parameters(), 'lr': 5e-6})
+    # train text encoder
+    #optimizer.add_param_group({'params': text_encoder.parameters(), 'lr': 5e-6})
 
     if config.train.lr_schedule_args and config.train.lr_schedule_args.get("num_warmup_steps", None):
         config.train.lr_schedule_args["num_warmup_steps"] = (
@@ -946,7 +947,9 @@ def main(cfg: SanaConfig) -> None:
     # Prepare everything
     # There is no specific order to remember, you just need to unpack the
     # objects in the same order you gave them to the prepare method.
-    model, text_encoder = accelerator.prepare(model, text_encoder)
+    # train text encoder
+    #model, text_encoder = accelerator.prepare(model, text_encoder)
+    model = accelerator.prepare(model)
     optimizer, lr_scheduler = accelerator.prepare(optimizer, lr_scheduler)
 
     train(
