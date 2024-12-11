@@ -1,6 +1,7 @@
 import os
 from PIL import Image
 from downscale import downscale_image_by
+import shutil
 
 
 def process_images_in_directory(input_dir, output_dir, max_size=768):
@@ -29,6 +30,8 @@ def process_images_in_directory(input_dir, output_dir, max_size=768):
                 name, _ = os.path.splitext(filename)
                 output_path = os.path.join(output_dir, f"{name}.jpg")
                 image.save(output_path, quality=96)
+
+                shutil.copy(os.path.join(input_dir, f"{name}.txt"), os.path.join(output_dir, f"{name}.txt"))
                 #print(f"Saved processed image: {output_path}")
 
         except Exception as e:
