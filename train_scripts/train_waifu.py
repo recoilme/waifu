@@ -428,7 +428,7 @@ def train(config, args, accelerator, model, optimizer, lr_scheduler, dataset, tr
                 print("y.shape", y.shape)  # Например, torch.Size([batch_size, sequence_length, hidden_size])
                 print("y_mask.shape", y_mask.shape)  # Например, torch.Size([batch_size, sequence_length])
                 # Применение маски внимания
-                y_masked = y * y_mask.unsqueeze(-1)
+                y_mask = y * y_mask.unsqueeze(-1)
                 print("y_masked.shape", y_masked.shape)  # Например, torch.Size([batch_size, sequence_length, hidden_size]) 
 
             # Sample a random timestep for each image
