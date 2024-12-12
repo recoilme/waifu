@@ -60,10 +60,10 @@ vae:
   sample_posterior: true
 # text encoder
 text_encoder:
-  text_encoder_name: siglip
-  y_norm: true
-  y_norm_scale_factor: 0.01
-  model_max_length: 64
+  text_encoder_name: visheratin/mexma-siglip
+  #y_norm: true
+  #y_norm_scale_factor: 0.01
+  model_max_length: 512
 # Sana schedule Flow
 scheduler:
   predict_v: true

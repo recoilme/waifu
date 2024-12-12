@@ -18,7 +18,7 @@ import torch
 from diffusers.models import AutoencoderKL
 from mmcv import Registry
 from termcolor import colored
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, T5EncoderModel, T5Tokenizer
+from transformers import AutoModel, AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, T5EncoderModel, T5Tokenizer
 from transformers import logging as transformers_logging
 
 from diffusion.model.dc_ae.efficientvit.ae_model_zoo import DCAE_HF
@@ -57,7 +57,7 @@ def get_tokenizer_and_text_encoder(name="T5", device="cuda"):
         "gemma-2-9b-it": "google/gemma-2-9b-it",
         "Qwen2-0.5B-Instruct": "Qwen/Qwen2-0.5B-Instruct",
         "Qwen2-1.5B-Instruct": "Qwen/Qwen2-1.5B-Instruct",
-        "siglip": "google/siglip-so400m-patch14-384",
+        "visheratin/mexma-siglip": "visheratin/mexma-siglip",
     }
     assert name in list(text_encoder_dict.keys()), f"not support this text encoder: {name}"
     if "T5" in name:
@@ -72,9 +72,8 @@ def get_tokenizer_and_text_encoder(name="T5", device="cuda"):
             .to(device)
         )
     elif "siglip" in name:
-        from transformers import SiglipTextModel, AutoTokenizer
         tokenizer = AutoTokenizer.from_pretrained(text_encoder_dict[name])
-        text_encoder = SiglipTextModel.from_pretrained(text_encoder_dict[name], torch_dtype=torch.float16).to(device)
+        text_encoder = AutoModel.from_pretrained(text_encoder_dict[name], torch_dtype=torch.float16, trust_remote_code=True, optimized=True).to(device)
     else:
         print("error load text encoder")
         exit()
