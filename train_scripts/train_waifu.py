@@ -711,7 +711,6 @@ def main(cfg: SanaConfig) -> None:
                         "gemma" in config.text_encoder.text_encoder_name or "Qwen" in config.text_encoder.text_encoder_name or "siglip" in config.text_encoder.text_encoder_name
                 ):
                     txt_tokens = tokenizer(prompt, return_tensors="pt", padding=True).to(accelerator.device)
-                    #caption_emb = text_encoder.encode_texts(txt_tokens['input_ids'],txt_tokens['attention_mask'])
                     caption_emb = text_encoder.text_model(input_ids=txt_tokens['input_ids'], attention_mask=txt_tokens['attention_mask']).last_hidden_state
                     caption_emb_mask = txt_tokens['attention_mask']
                 else:
@@ -719,14 +718,7 @@ def main(cfg: SanaConfig) -> None:
 
                 torch.save({"caption_embeds": caption_emb, "emb_mask": caption_emb_mask}, prompt_embed_path)
 
-            null_tokens = tokenizer(
-                "",
-                max_length=max_length,
-                padding="max_length",
-                truncation=True,
-                return_tensors="pt",
-				return_attention_mask=True
-            ).to(accelerator.device)
+            null_tokens = tokenizer(prompt, return_tensors="pt", padding=True).to(accelerator.device)
             if "T5" in config.text_encoder.text_encoder_name:
                 null_token_emb = text_encoder(null_tokens.input_ids, attention_mask=null_tokens.attention_mask)[0]
             elif "gemma" in config.text_encoder.text_encoder_name or "Qwen" in config.text_encoder.text_encoder_name:
