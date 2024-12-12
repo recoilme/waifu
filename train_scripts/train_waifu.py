@@ -420,17 +420,17 @@ def train(config, args, accelerator, model, optimizer, lr_scheduler, dataset, tr
             lm_time_start = time.time()
             prompts = list(batch[2])
             with torch.no_grad():
-                txt_tokens = tokenizer(prompts, return_tensors="pt", padding=True).to(accelerator.device)
-                #y = text_encoder.encode_texts(txt_tokens['input_ids'],txt_tokens['attention_mask'])
-                y = text_encoder.text_model(input_ids=txt_tokens['input_ids'], attention_mask=txt_tokens['attention_mask']).last_hidden_state
-                y_mask = txt_tokens['attention_mask']
+                txt_tokens = tokenizer(prompts, return_tensors="pt", padding="max_length").to(accelerator.device)
+                select_index = [0] + list(
+                    range(-config.text_encoder.model_max_length + 1, 0)
+                )
+                y = text_encoder.text_model(txt_tokens.input_ids, attention_mask=txt_tokens.attention_mask, output_hidden_states=False, output_attentions=False).last_hidden_state[:, None][
+                    :, :, select_index
+                    ]
+                
+                y_mask = txt_tokens.attention_mask[:, None, None][:, :, :, select_index]
                 # Проверка размерностей
-                print("y.shape", y.shape)  # Например, torch.Size([batch_size, sequence_length, hidden_size])
-                print("y_mask.shape", y_mask.shape)  # Например, torch.Size([batch_size, sequence_length])
-                # Применение маски внимания
-                y_mask = y * y_mask.unsqueeze(-1)
-                print("y_masked.shape", y_mask.shape, y_mask)  # Например, torch.Size([batch_size, sequence_length, hidden_size]) 
-                print("attention_mask",prompts)
+                print(" Проверка размерностей y.shape, y_mask.shape,y,y_mask", y.shape, y_mask.shape,y,y_mask)
 
             # Sample a random timestep for each image
             bs = clean_images.shape[0]
@@ -717,7 +717,7 @@ def main(cfg: SanaConfig) -> None:
                 elif (
                         "gemma" in config.text_encoder.text_encoder_name or "Qwen" in config.text_encoder.text_encoder_name or "siglip" in config.text_encoder.text_encoder_name
                 ):
-                    txt_tokens = tokenizer(prompt, return_tensors="pt", padding=True).to(accelerator.device)
+                    txt_tokens = tokenizer(prompt, return_tensors="pt", padding="max_length").to(accelerator.device)
                     caption_emb = text_encoder.text_model(input_ids=txt_tokens['input_ids'], attention_mask=txt_tokens['attention_mask']).last_hidden_state
                     caption_emb_mask = txt_tokens['attention_mask']
                     print("attention_mask2")
@@ -726,7 +726,7 @@ def main(cfg: SanaConfig) -> None:
 
                 torch.save({"caption_embeds": caption_emb, "emb_mask": caption_emb_mask}, prompt_embed_path)
 
-            null_tokens = tokenizer(prompt, return_tensors="pt", padding=True).to(accelerator.device)
+            null_tokens = tokenizer(prompt, return_tensors="pt", padding="max_length").to(accelerator.device)
             if "T5" in config.text_encoder.text_encoder_name:
                 null_token_emb = text_encoder(null_tokens.input_ids, attention_mask=null_tokens.attention_mask)[0]
             elif "gemma" in config.text_encoder.text_encoder_name or "Qwen" in config.text_encoder.text_encoder_name:
