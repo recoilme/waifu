@@ -420,24 +420,9 @@ def train(config, args, accelerator, model, optimizer, lr_scheduler, dataset, tr
             lm_time_start = time.time()
             prompts = list(batch[2])
             #with torch.no_grad():
-            select_index = [0] + list(
-                    range(-config.text_encoder.model_max_length + 1, 0)
-                )
-
-            #txt_tokens = tokenizer(
-            #    prompts,
-            #    padding="max_length",
-            #    max_length=config.text_encoder.model_max_length,
-            #    truncation=True,
-            #    return_tensors="pt",
-            #    return_attention_mask=True
-            #).to(accelerator.device)
-            #y = text_encoder(txt_tokens.input_ids, attention_mask=txt_tokens.attention_mask, output_hidden_states=False, output_attentions=False).last_hidden_state[:, None][
-            #        :, :, select_index
-            #        ]
-            #y_mask = txt_tokens.attention_mask[:, None, None][:, :, :, select_index]
             txt_tokens = tokenizer(prompts, return_tensors="pt", padding=True).to(accelerator.device)
-            y = text_encoder.encode_texts(txt_tokens['input_ids'],txt_tokens['attention_mask'])
+            #y = text_encoder.encode_texts(txt_tokens['input_ids'],txt_tokens['attention_mask'])
+            y = text_encoder.text_model(input_ids=txt_tokens['input_ids'], attention_mask=txt_tokens['attention_mask']).last_hidden_state
             y_mask = txt_tokens['attention_mask']
 
             # Sample a random timestep for each image
@@ -725,21 +710,9 @@ def main(cfg: SanaConfig) -> None:
                 elif (
                         "gemma" in config.text_encoder.text_encoder_name or "Qwen" in config.text_encoder.text_encoder_name or "siglip" in config.text_encoder.text_encoder_name
                 ):
-                    #txt_tokens = tokenizer(
-                    #    prompt,
-                    #    max_length=config.text_encoder.model_max_length,
-                    #    padding="max_length",
-                    #    truncation=True,
-                    #    return_tensors="pt",
-				    #		return_attention_mask=True
-                    #).to(accelerator.device)
-                    #select_index = [0] + list(range(-config.text_encoder.model_max_length + 1, 0))
-                    #caption_emb = text_encoder(txt_tokens.input_ids, attention_mask=txt_tokens.attention_mask)[0][
-                    #              :, select_index
-                    #              ]
-                    #caption_emb_mask = txt_tokens.attention_mask[:, select_index]
                     txt_tokens = tokenizer(prompt, return_tensors="pt", padding=True).to(accelerator.device)
-                    caption_emb = text_encoder.encode_texts(txt_tokens['input_ids'],txt_tokens['attention_mask'])
+                    #caption_emb = text_encoder.encode_texts(txt_tokens['input_ids'],txt_tokens['attention_mask'])
+                    caption_emb = text_encoder.text_model(input_ids=txt_tokens['input_ids'], attention_mask=txt_tokens['attention_mask']).last_hidden_state
                     caption_emb_mask = txt_tokens['attention_mask']
                 else:
                     raise ValueError(f"{config.text_encoder.text_encoder_name} is not supported!!")

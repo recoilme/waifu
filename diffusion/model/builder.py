@@ -71,9 +71,10 @@ def get_tokenizer_and_text_encoder(name="T5", device="cuda"):
             .get_decoder()
             .to(device)
         )
-    elif "siglip" in name:
+    elif "visheratin/mexma-siglip" in name:
         tokenizer = AutoTokenizer.from_pretrained(text_encoder_dict[name])
         text_encoder = AutoModel.from_pretrained(text_encoder_dict[name], torch_dtype=torch.float16, trust_remote_code=True, optimized=True).to(device)
+
     else:
         print("error load text encoder")
         exit()
