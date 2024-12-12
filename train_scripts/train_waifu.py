@@ -429,7 +429,8 @@ def train(config, args, accelerator, model, optimizer, lr_scheduler, dataset, tr
                 print("y_mask.shape", y_mask.shape)  # Например, torch.Size([batch_size, sequence_length])
                 # Применение маски внимания
                 y_mask = y * y_mask.unsqueeze(-1)
-                print("y_masked.shape", y_masked.shape)  # Например, torch.Size([batch_size, sequence_length, hidden_size]) 
+                print("y_masked.shape", y_mask.shape, y_mask)  # Например, torch.Size([batch_size, sequence_length, hidden_size]) 
+                print("attention_mask",prompts)
 
             # Sample a random timestep for each image
             bs = clean_images.shape[0]
@@ -719,6 +720,7 @@ def main(cfg: SanaConfig) -> None:
                     txt_tokens = tokenizer(prompt, return_tensors="pt", padding=True).to(accelerator.device)
                     caption_emb = text_encoder.text_model(input_ids=txt_tokens['input_ids'], attention_mask=txt_tokens['attention_mask']).last_hidden_state
                     caption_emb_mask = txt_tokens['attention_mask']
+                    print("attention_mask2")
                 else:
                     raise ValueError(f"{config.text_encoder.text_encoder_name} is not supported!!")
 
@@ -731,6 +733,7 @@ def main(cfg: SanaConfig) -> None:
                 null_token_emb = text_encoder(null_tokens.input_ids, attention_mask=null_tokens.attention_mask)[0]
             elif "mexma-siglip" in config.text_encoder.text_encoder_name:
                 null_token_emb = text_encoder.text_model(null_tokens.input_ids, attention_mask=null_tokens.attention_mask).last_hidden_state
+                print("attention_mask3",null_tokens.shape,null_token_emb.shape)
             else:
                 raise ValueError(f"{config.text_encoder.text_encoder_name} is not supported!!")
             torch.save(
