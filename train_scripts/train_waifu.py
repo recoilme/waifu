@@ -430,7 +430,7 @@ def train(config, args, accelerator, model, optimizer, lr_scheduler, dataset, tr
                 
                 y_mask = txt_tokens.attention_mask[:, None, None][:, :, :, select_index]
                 # Проверка размерностей
-                print(" Проверка размерностей y.shape, y_mask.shape,y,y_mask", y.shape, y_mask.shape,y,y_mask)
+                print(" Проверка размерностей y.shape, y_mask.shape,y,y_mask", y.shape, y_mask.shape)
 
             # Sample a random timestep for each image
             bs = clean_images.shape[0]
@@ -718,9 +718,15 @@ def main(cfg: SanaConfig) -> None:
                         "gemma" in config.text_encoder.text_encoder_name or "Qwen" in config.text_encoder.text_encoder_name or "siglip" in config.text_encoder.text_encoder_name
                 ):
                     txt_tokens = tokenizer(prompt, return_tensors="pt", padding="max_length").to(accelerator.device)
-                    caption_emb = text_encoder.text_model(input_ids=txt_tokens['input_ids'], attention_mask=txt_tokens['attention_mask']).last_hidden_state
-                    caption_emb_mask = txt_tokens['attention_mask']
+                    #caption_emb = text_encoder.text_model(input_ids=txt_tokens['input_ids'], attention_mask=txt_tokens['attention_mask'])[0]
+                    #caption_emb_mask = txt_tokens['attention_mask']
                     print("attention_mask2")
+
+                    select_index = [0] + list(range(-config.text_encoder.model_max_length + 1, 0))
+                    caption_emb = text_encoder.text_model(txt_tokens.input_ids, attention_mask=txt_tokens.attention_mask)[0][
+                                  :, select_index
+                                  ]
+                    caption_emb_mask = txt_tokens.attention_mask[:, select_index]
                 else:
                     raise ValueError(f"{config.text_encoder.text_encoder_name} is not supported!!")
 
@@ -732,7 +738,7 @@ def main(cfg: SanaConfig) -> None:
             elif "gemma" in config.text_encoder.text_encoder_name or "Qwen" in config.text_encoder.text_encoder_name:
                 null_token_emb = text_encoder(null_tokens.input_ids, attention_mask=null_tokens.attention_mask)[0]
             elif "mexma-siglip" in config.text_encoder.text_encoder_name:
-                null_token_emb = text_encoder.text_model(null_tokens.input_ids, attention_mask=null_tokens.attention_mask).last_hidden_state
+                null_token_emb = text_encoder.text_model(null_tokens.input_ids, attention_mask=null_tokens.attention_mask)[0]
                 print("attention_mask3",null_tokens.shape,null_token_emb.shape)
             else:
                 raise ValueError(f"{config.text_encoder.text_encoder_name} is not supported!!")
