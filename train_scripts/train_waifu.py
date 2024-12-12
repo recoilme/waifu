@@ -732,14 +732,15 @@ def main(cfg: SanaConfig) -> None:
 
                 torch.save({"caption_embeds": caption_emb, "emb_mask": caption_emb_mask}, prompt_embed_path)
 
-            null_tokens = tokenizer(prompt, return_tensors="pt", padding="max_length").to(accelerator.device)
+            null_tokens = tokenizer("", return_tensors="pt", padding="max_length").to(accelerator.device)
             if "T5" in config.text_encoder.text_encoder_name:
                 null_token_emb = text_encoder(null_tokens.input_ids, attention_mask=null_tokens.attention_mask)[0]
             elif "gemma" in config.text_encoder.text_encoder_name or "Qwen" in config.text_encoder.text_encoder_name:
                 null_token_emb = text_encoder(null_tokens.input_ids, attention_mask=null_tokens.attention_mask)[0]
             elif "mexma-siglip" in config.text_encoder.text_encoder_name:
-                null_token_emb = text_encoder.text_model(null_tokens.input_ids, attention_mask=null_tokens.attention_mask)[0]
                 print("attention_mask3",null_tokens.shape,null_token_emb.shape)
+                null_token_emb = text_encoder.text_model(null_tokens.input_ids, attention_mask=null_tokens.attention_mask)[0]
+                
             else:
                 raise ValueError(f"{config.text_encoder.text_encoder_name} is not supported!!")
             torch.save(
