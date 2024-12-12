@@ -419,11 +419,11 @@ def train(config, args, accelerator, model, optimizer, lr_scheduler, dataset, tr
 
             lm_time_start = time.time()
             prompts = list(batch[2])
-            #with torch.no_grad():
-            txt_tokens = tokenizer(prompts, return_tensors="pt", padding=True).to(accelerator.device)
-            #y = text_encoder.encode_texts(txt_tokens['input_ids'],txt_tokens['attention_mask'])
-            y = text_encoder.text_model(input_ids=txt_tokens['input_ids'], attention_mask=txt_tokens['attention_mask']).last_hidden_state
-            y_mask = txt_tokens['attention_mask']
+            with torch.no_grad():
+                txt_tokens = tokenizer(prompts, return_tensors="pt", padding=True).to(accelerator.device)
+                #y = text_encoder.encode_texts(txt_tokens['input_ids'],txt_tokens['attention_mask'])
+                y = text_encoder.text_model(input_ids=txt_tokens['input_ids'], attention_mask=txt_tokens['attention_mask']).last_hidden_state
+                y_mask = txt_tokens['attention_mask']
 
             # Sample a random timestep for each image
             bs = clean_images.shape[0]
@@ -724,7 +724,7 @@ def main(cfg: SanaConfig) -> None:
             elif "gemma" in config.text_encoder.text_encoder_name or "Qwen" in config.text_encoder.text_encoder_name:
                 null_token_emb = text_encoder(null_tokens.input_ids, attention_mask=null_tokens.attention_mask)[0]
             elif "mexma-siglip" in config.text_encoder.text_encoder_name:
-                null_token_emb = text_encoder.text_model(null_tokens.input_ids, attention_mask=null_tokens.attention_mask).last_hidden_state
+                null_token_emb = text_encoder.text_model(null_tokens.input_ids, attention_mask=null_tokens.attention_mask)[0]
             else:
                 raise ValueError(f"{config.text_encoder.text_encoder_name} is not supported!!")
             torch.save(
