@@ -424,6 +424,12 @@ def train(config, args, accelerator, model, optimizer, lr_scheduler, dataset, tr
                 #y = text_encoder.encode_texts(txt_tokens['input_ids'],txt_tokens['attention_mask'])
                 y = text_encoder.text_model(input_ids=txt_tokens['input_ids'], attention_mask=txt_tokens['attention_mask']).last_hidden_state
                 y_mask = txt_tokens['attention_mask']
+                # Проверка размерностей
+                print("y.shape", y.shape)  # Например, torch.Size([batch_size, sequence_length, hidden_size])
+                print("y_mask.shape", y_mask.shape)  # Например, torch.Size([batch_size, sequence_length])
+                # Применение маски внимания
+                y_masked = y * y_mask.unsqueeze(-1)
+                print("y_masked.shape", y_masked.shape)  # Например, torch.Size([batch_size, sequence_length, hidden_size]) 
 
             # Sample a random timestep for each image
             bs = clean_images.shape[0]
