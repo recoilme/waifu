@@ -738,7 +738,7 @@ def main(cfg: SanaConfig) -> None:
             elif "gemma" in config.text_encoder.text_encoder_name or "Qwen" in config.text_encoder.text_encoder_name:
                 null_token_emb = text_encoder(null_tokens.input_ids, attention_mask=null_tokens.attention_mask)[0]
             elif "mexma-siglip" in config.text_encoder.text_encoder_name:
-                print("attention_mask3",null_tokens.shape,null_token_emb.shape)
+                print("attention_mask3")
                 null_token_emb = text_encoder.text_model(null_tokens.input_ids, attention_mask=null_tokens.attention_mask)[0]
                 
             else:
