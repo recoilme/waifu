@@ -57,7 +57,7 @@ def get_tokenizer_and_text_encoder(name="T5", device="cuda"):
         "gemma-2-9b-it": "google/gemma-2-9b-it",
         "Qwen2-0.5B-Instruct": "Qwen/Qwen2-0.5B-Instruct",
         "Qwen2-1.5B-Instruct": "Qwen/Qwen2-1.5B-Instruct",
-        "visheratin/mexma-siglip": "visheratin/mexma-siglip",
+        "mexma-siglip": "visheratin/mexma-siglip",
     }
     assert name in list(text_encoder_dict.keys()), f"not support this text encoder: {name}"
     if "T5" in name:

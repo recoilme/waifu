@@ -651,7 +651,7 @@ def main(cfg: SanaConfig) -> None:
             name=config.text_encoder.text_encoder_name, device=accelerator.device
         )
         text_encoder.requires_grad_(False)
-        text_embed_dim = text_encoder.config.hidden_size
+        text_embed_dim = 1024 #text_encoder.config.hidden_size
     else:
         text_embed_dim = config.text_encoder.caption_channels
 

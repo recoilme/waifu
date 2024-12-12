@@ -1,5 +1,5 @@
 data:
-  data_dir: [/workspace/ae]
+  data_dir: [/workspace/256]
   image_size: 256
 # training setting
 train:
@@ -60,7 +60,7 @@ vae:
   sample_posterior: true
 # text encoder
 text_encoder:
-  text_encoder_name: visheratin/mexma-siglip
+  text_encoder_name: mexma-siglip
   #y_norm: true
   #y_norm_scale_factor: 0.01
   model_max_length: 512
