@@ -5,8 +5,8 @@ data:
 train:
   num_workers: 1
   seed: 42
-  train_batch_size: 16
-  num_epochs: 24
+  train_batch_size: 30
+  num_epochs: 8
   gradient_accumulation_steps: 1
   grad_checkpointing: true
   gradient_clip: 0.2
@@ -19,12 +19,12 @@ train:
   lr_schedule: constant
   lr_schedule_args:
     num_warmup_steps: 0
-  local_save_vis: true # if save log image locally
+  local_save_vis: false # if save log image locally
   visualize: true
   eval_sampling_steps: 200
   log_interval: 20
   save_model_epochs: 1
-  save_model_steps: 120000
+  save_model_steps: 4000
   work_dir: output
   online_metric: false
   eval_metric_step: 200000
@@ -35,7 +35,6 @@ train:
     - рубанок, столярный рубанок, деревообрабатывающий рубанок
     - cocker spaniel, English cocker spaniel, cockerroot
     - кокер-спаниель, английский кокер-спаниель
-    - المنغمس الذليل ، الإنجليزية المنغمس الذليل
     - year22,2girls,:d,aged down,animal ears,animal hood,bell,black hairband,blue bow,blue eyes,blush,bow,braid,brown hoodie,cowboy shot,detached sleeves,fake animal ears,fangs,fur collar,hairband,hood,hood up,hoodie,japanese clothes,long sleeves,looking at viewer,miniskirt,by momochi chia,multiple girls,one eye closed,open mouth,pleated skirt,signature,skirt,smile,tail,tail raised,thighs,virtual youtuber,white hair
     - 1girl, solo, animal ears, bow, teeth, jacket, tail, open mouth, brown hair, orange background, bowtie, orange nails, simple background, cat ears, orange eyes, blue bow, animal ear fluff, cat tail, looking at viewer, upper body, shirt, school uniform, hood, striped bow, striped, white shirt, black jacket, blue bowtie, fingernails, long sleeves, cat girl, bangs, fangs, collared shirt, striped bowtie, short hair, tongue, hoodie, sharp teeth, facial mark, claw pose
 # model config
@@ -72,7 +71,7 @@ text_encoder:
   text_encoder_name: mexma-siglip
   y_norm: true
   y_norm_scale_factor: 0.01
-  model_max_length: 128
+  model_max_length: 512
 # Sana schedule Flow
 scheduler:
   predict_v: true

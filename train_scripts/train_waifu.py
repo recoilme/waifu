@@ -419,16 +419,16 @@ def train(config, args, accelerator, model, optimizer, lr_scheduler, dataset, tr
 
             lm_time_start = time.time()
             prompts = list(batch[2])
-            #with torch.no_grad():
-            txt_tokens = tokenizer(prompts, return_tensors="pt", padding="max_length", max_length = config.text_encoder.model_max_length ,truncation=True).to(accelerator.device)
-            select_index = [0] + list(
-                range(-config.text_encoder.model_max_length + 1, 0)
-            )
-            y = text_encoder.text_model(txt_tokens.input_ids, attention_mask=txt_tokens.attention_mask, output_hidden_states=False, output_attentions=False).last_hidden_state[:, None][
-                :, :, select_index
-                ]
-            
-            y_mask = txt_tokens.attention_mask[:, None, None][:, :, :, select_index]
+            with torch.no_grad():
+                txt_tokens = tokenizer(prompts, return_tensors="pt", padding="max_length", max_length = config.text_encoder.model_max_length ,truncation=True).to(accelerator.device)
+                select_index = [0] + list(
+                    range(-config.text_encoder.model_max_length + 1, 0)
+                )
+                y = text_encoder.text_model(txt_tokens.input_ids, attention_mask=txt_tokens.attention_mask, output_hidden_states=False, output_attentions=False).last_hidden_state[:, None][
+                    :, :, select_index
+                    ]
+                
+                y_mask = txt_tokens.attention_mask[:, None, None][:, :, :, select_index]
 
             # Sample a random timestep for each image
             bs = clean_images.shape[0]
@@ -837,7 +837,7 @@ def main(cfg: SanaConfig) -> None:
     rank = 0 #torch.distributed.get_rank()
     if os.environ.get('RANK') is not None:
         rank = int(os.environ["RANK"])
-    dataset = RatioBucketsDataset("buckets.json")
+    dataset = RatioBucketsDataset("../buckets.json")
     accelerator.wait_for_everyone()
     dataset.make_loaders(batch_size=config.train.train_batch_size)
 
