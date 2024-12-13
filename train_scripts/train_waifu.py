@@ -420,7 +420,7 @@ def train(config, args, accelerator, model, optimizer, lr_scheduler, dataset, tr
             lm_time_start = time.time()
             prompts = list(batch[2])
             with torch.no_grad():
-                txt_tokens = tokenizer(prompts, return_tensors="pt", padding="max_length",truncation=True).to(accelerator.device)
+                txt_tokens = tokenizer(prompts, return_tensors="pt", padding="max_length", max_length = config.text_encoder.model_max_length ,truncation=True).to(accelerator.device)
                 select_index = [0] + list(
                     range(-config.text_encoder.model_max_length + 1, 0)
                 )
@@ -707,7 +707,7 @@ def main(cfg: SanaConfig) -> None:
                 )
                 if "T5" in config.text_encoder.text_encoder_name:
                     txt_tokens = tokenizer(
-                        prompt, max_length=max_length, padding="max_length", truncation=True, return_tensors="pt",
+                        prompt, max_length=max_length, padding="max_length", max_length = max_length, truncation=True, return_tensors="pt",
 						return_attention_mask=True
                     ).to(accelerator.device)
                     caption_emb = text_encoder(txt_tokens.input_ids, attention_mask=txt_tokens.attention_mask)[0]
@@ -715,7 +715,7 @@ def main(cfg: SanaConfig) -> None:
                 elif (
                         "gemma" in config.text_encoder.text_encoder_name or "Qwen" in config.text_encoder.text_encoder_name or "siglip" in config.text_encoder.text_encoder_name
                 ):
-                    txt_tokens = tokenizer(prompt, return_tensors="pt", padding="max_length", truncation=True).to(accelerator.device)
+                    txt_tokens = tokenizer(prompt, return_tensors="pt", padding="max_length", max_length=max_length, truncation=True).to(accelerator.device)
                     select_index = [0] + list(range(-config.text_encoder.model_max_length + 1, 0))
                     caption_emb = text_encoder.text_model(txt_tokens.input_ids, attention_mask=txt_tokens.attention_mask)[0][
                                   :, select_index
@@ -726,7 +726,7 @@ def main(cfg: SanaConfig) -> None:
 
                 torch.save({"caption_embeds": caption_emb, "emb_mask": caption_emb_mask}, prompt_embed_path)
 
-            null_tokens = tokenizer("", return_tensors="pt", padding="max_length", truncation=True).to(accelerator.device)
+            null_tokens = tokenizer("", return_tensors="pt", padding="max_length", max_length=max_length, truncation=True).to(accelerator.device)
             if "T5" in config.text_encoder.text_encoder_name:
                 null_token_emb = text_encoder(null_tokens.input_ids, attention_mask=null_tokens.attention_mask)[0]
             elif "gemma" in config.text_encoder.text_encoder_name or "Qwen" in config.text_encoder.text_encoder_name:
