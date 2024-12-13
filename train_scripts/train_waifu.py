@@ -707,7 +707,7 @@ def main(cfg: SanaConfig) -> None:
                 )
                 if "T5" in config.text_encoder.text_encoder_name:
                     txt_tokens = tokenizer(
-                        prompt, max_length=max_length, padding="max_length", max_length = max_length, truncation=True, return_tensors="pt",
+                        prompt, padding="max_length", max_length = max_length, truncation=True, return_tensors="pt",
 						return_attention_mask=True
                     ).to(accelerator.device)
                     caption_emb = text_encoder(txt_tokens.input_ids, attention_mask=txt_tokens.attention_mask)[0]
