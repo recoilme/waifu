@@ -72,7 +72,7 @@ text_encoder:
   text_encoder_name: mexma-siglip
   y_norm: true
   y_norm_scale_factor: 0.01
-  model_max_length: 512
+  model_max_length: 128
 # Sana schedule Flow
 scheduler:
   predict_v: true
