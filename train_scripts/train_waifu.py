@@ -527,7 +527,7 @@ def train(config, args, accelerator, model, optimizer, lr_scheduler, dataset, tr
             if loss_nan_timer > 20:
                 raise ValueError("Loss is NaN too much times. Break here.")
             if global_step % config.train.save_model_steps == 0:
-                save_model(config.train.online_metric and global_step % config.train.eval_metric_step == 0 and step > 1)
+                save_model(config.train.online_metric and global_step % config.train.eval_metric_step == 0 and step > 1, False)
 
                 # if (time.time() - training_start_time) / 3600 > 3.8:
                 #     logger.info(f"Stopping training at epoch {epoch}, step {global_step} due to time limit.")
