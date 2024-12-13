@@ -36,6 +36,8 @@ train:
     - cocker spaniel, English cocker spaniel, cockerroot
     - кокер-спаниель, английский кокер-спаниель
     - المنغمس الذليل ، الإنجليزية المنغمس الذليل
+    - year22,2girls,:d,aged down,animal ears,animal hood,bell,black hairband,blue bow,blue eyes,blush,bow,braid,brown hoodie,cowboy shot,detached sleeves,fake animal ears,fangs,fur collar,hairband,hood,hood up,hoodie,japanese clothes,long sleeves,looking at viewer,miniskirt,by momochi chia,multiple girls,one eye closed,open mouth,pleated skirt,signature,skirt,smile,tail,tail raised,thighs,virtual youtuber,white hair
+    - 1girl, solo, animal ears, bow, teeth, jacket, tail, open mouth, brown hair, orange background, bowtie, orange nails, simple background, cat ears, orange eyes, blue bow, animal ear fluff, cat tail, looking at viewer, upper body, shirt, school uniform, hood, striped bow, striped, white shirt, black jacket, blue bowtie, fingernails, long sleeves, cat girl, bangs, fangs, collared shirt, striped bowtie, short hair, tongue, hoodie, sharp teeth, facial mark, claw pose
 # model config
 model:
   model: SanaMS_1600M_P1_D20
