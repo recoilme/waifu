@@ -1,17 +1,17 @@
 data:
-  data_dir: [/workspace/256]
+  data_dir: [/workspace/imagenet100k]
   image_size: 256
 # training setting
 train:
   num_workers: 1
   seed: 42
   train_batch_size: 30
-  num_epochs: 8
+  num_epochs: 2
   gradient_accumulation_steps: 1
   grad_checkpointing: true
   gradient_clip: 0.2
   optimizer:
-    lr: 1.0e-4
+    lr: 8.0e-5
     type: AdamW
     weight_decay: 0.01
     eps: 1.0e-8
@@ -21,18 +21,19 @@ train:
     num_warmup_steps: 0
   local_save_vis: false # if save log image locally
   visualize: true
-  eval_sampling_steps: 200
+  eval_sampling_steps: 500
   log_interval: 20
   save_model_epochs: 1
-  save_model_steps: 4000
+  save_model_steps: 1500
   work_dir: output
   online_metric: false
   eval_metric_step: 200000
   online_metric_dir: metric_helper
   validation_prompts:
-    - portrait photo of a girl
+    - a girl
     - plane, carpenter's plane, woodworking plane
-    - рубанок, столярный рубанок, деревообрабатывающий рубанок
+    - тигр а джунглях
+    - девушка в кафе
     - cocker spaniel, English cocker spaniel, cockerroot
     - кокер-спаниель, английский кокер-спаниель
     - year22,2girls,:d,aged down,animal ears,animal hood,bell,black hairband,blue bow,blue eyes,blush,bow,braid,brown hoodie,cowboy shot,detached sleeves,fake animal ears,fangs,fur collar,hairband,hood,hood up,hoodie,japanese clothes,long sleeves,looking at viewer,miniskirt,by momochi chia,multiple girls,one eye closed,open mouth,pleated skirt,signature,skirt,smile,tail,tail raised,thighs,virtual youtuber,white hair
