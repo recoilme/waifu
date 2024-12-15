@@ -30,6 +30,7 @@ from .logger import get_root_logger
 from came_pytorch import CAME
 
 from transformers import Adafactor
+from adafactor_fused import patch_adafactor_fused
 
 def auto_scale_lr(effective_bs, optimizer_cfg, rule="linear", base_batch_size=256):
     assert rule in ["linear", "sqrt"]
@@ -254,5 +255,10 @@ class CAMEWrapper(CAME):
 @OPTIMIZERS.register_module()
 class AdafactorWrapper(Adafactor):
     def __init__(self, *args, **kwargs):
-
         super().__init__(*args, **kwargs)
+
+@OPTIMIZERS.register_module()
+class AdafactorFusedWrapper(Adafactor):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        patch_adafactor_fused(self)
