@@ -18,7 +18,6 @@ import math
 from typing import Callable, Optional, Tuple
 
 import torch
-from came_pytorch import CAME
 from mmcv import Config
 from mmcv.runner import OPTIMIZER_BUILDERS, OPTIMIZERS, DefaultOptimizerConstructor
 from mmcv.runner import build_optimizer as mm_build_optimizer
@@ -28,6 +27,9 @@ from torch.optim.optimizer import Optimizer
 
 from .logger import get_root_logger
 
+from came_pytorch import CAME
+
+from transformers import Adafactor
 
 def auto_scale_lr(effective_bs, optimizer_cfg, rule="linear", base_batch_size=256):
     assert rule in ["linear", "sqrt"]
@@ -244,6 +246,13 @@ class Lion(Optimizer):
 
 @OPTIMIZERS.register_module()
 class CAMEWrapper(CAME):
+    def __init__(self, *args, **kwargs):
+
+        super().__init__(*args, **kwargs)
+
+
+@OPTIMIZERS.register_module()
+class AdafactorWrapper(Adafactor):
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
