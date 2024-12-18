@@ -314,29 +314,23 @@ class ImageDataset(torch.utils.data.Dataset):
         return len(self.images)
 
 
-def compute_lr(step, peak_lr=7e-5, min_lr=5e-5, wavelength=200):
+import random
+
+def compute_lr(step, peak_lr=7.0e-5, min_lr=5.0e-5, wavelength=200):
     """
-    Compute the learning rate based on the current step using a sinusoidal wave.
+    Compute a random learning rate within the range [min_lr, peak_lr].
     
     Args:
         step (int): Current training step.
-        base_lr (float): The initial/base learning rate.
         peak_lr (float): The maximum learning rate.
         min_lr (float): The minimum learning rate.
-        wavelength (int): The number of steps for one full sinusoidal cycle.
+        wavelength (int): The number of steps for one full cycle (not used in this version).
     
     Returns:
-        float: The calculated learning rate for the current step.
+        float: A random learning rate within the specified range.
     """
-    # Compute the progress within the current cycle (0 to 1)
-    progress = (step % wavelength) / wavelength
-    
-    # Sinusoidal function to adjust LR
-    lr_range = peak_lr - min_lr
-    current_lr = (
-        min_lr +
-        lr_range / 2 * (1 + math.sin(2 * math.pi * progress))
-    )
+    # Generate a random learning rate between min_lr and peak_lr
+    current_lr = random.uniform(min_lr, peak_lr)
     return current_lr
 
 def train(config, args, accelerator, model, optimizer, lr_scheduler, dataset, train_diffusion):
