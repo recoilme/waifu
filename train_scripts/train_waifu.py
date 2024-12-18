@@ -90,7 +90,7 @@ def idation(accelerator, config, model, step, device, vae=None, init_noise=None)
         for prompt in validation_prompts:
             logger.info(prompt)
             z = (
-                torch.randn(1, config.vae.vae_latent_dim, latent_size, latent_size, device=device)
+                torch.randn(1, config.vae.vae_latent_dim, int(latent_size*1.25),int(latent_size//1.125), device=device)
                 if init_z is None
                 else init_z
             )
@@ -163,9 +163,9 @@ def idation(accelerator, config, model, step, device, vae=None, init_noise=None)
     image_logs += run_sampling(init_z=None, label_suffix="", sampler=vis_sampler)
 
     # Second run with init_noise if provided
-    if init_noise is not None:
-        init_noise = torch.clone(init_noise).to(device)
-        image_logs += run_sampling(init_z=init_noise, label_suffix=" w/ init noise", sampler=vis_sampler)
+    #if init_noise is not None:
+    #    init_noise = torch.clone(init_noise).to(device)
+    #    image_logs += run_sampling(init_z=init_noise, label_suffix=" w/ init noise", sampler=vis_sampler)
 
     if del_vae:
         vae = None
@@ -645,7 +645,7 @@ def main(cfg: SanaConfig) -> None:
     max_length = config.text_encoder.model_max_length
     vae = None
     validation_noise = (
-        torch.randn(1, config.vae.vae_latent_dim, latent_size, latent_size, device="cpu", generator=generator)
+        torch.randn(1, config.vae.vae_latent_dim, int(latent_size*1.25),int(latent_size//1.125), device="cpu", generator=generator)
         if getattr(config.train, "deterministic_validation", False)
         else None
     )
