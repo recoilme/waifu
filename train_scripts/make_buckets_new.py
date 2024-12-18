@@ -1,5 +1,4 @@
 import json
-import math
 import os
 import os.path as osp
 from itertools import chain
@@ -19,36 +18,27 @@ from diffusion.utils.config import SanaConfig
 @pyrallis.wrap()
 def main(config: SanaConfig) -> None:
     buckets_file = "buckets.json"
-    preferred_pixel_count = config.model.image_size * config.model.image_size
-
-    min_size = config.model.image_size // 1.5
-    max_size = int(config.model.image_size * 1.3334)
     step = 64
 
+    ASPECT_RATIO = {}
+    width = int(config.model.image_size // 1.5)  # Преобразуем в int
+    height = int(config.model.image_size * 1.3334)  # Преобразуем в int
+    for w in range(width, height + 1, step):  # Диапазон ширины
+        for h in range(width, height + 1, step):  # Диапазон высоты
+            ratio = round(w / h, 2)  # Вычисляем соотношение сторон и округляем до 2 знаков
+            ASPECT_RATIO[ratio] = [int(w), int(h)]  # Добавляем в словарь
+
+    # Отсортировать словарь по ключу
+    ASPECT_RATIO = dict(sorted(ASPECT_RATIO.items()))
+
     ratios_array = []
-    while min_size != max_size:
-        width = int(preferred_pixel_count / min_size)
-        if width % step != 0:
-            mod = width % step
-            if mod < step // 2:
-                width -= mod
-            else:
-                width += step - mod
-        ratio = min_size / width
+    for key, value in ASPECT_RATIO.items():
+        ratios_array.append((key, (value[0], value[1])))
 
-        ratios_array.append((ratio, (int(min_size), width)))
-        min_size += step
-
-    def get_closest_ratio(height: float, width: float):
-        aspect_ratio = height / width
+    def get_closest_ratio( width: float,height: float):
+        aspect_ratio = width / height 
         closest_ratio = min(ratios_array, key=lambda ratio: abs(ratio[0] - aspect_ratio))
         return closest_ratio
-
-    def get_preffered_size(height: float, width: float):
-        pixel_count = height * width
-
-        scale = math.sqrt(pixel_count / preferred_pixel_count)
-        return height / scale, width / scale
 
     class BucketsDataset(torch.utils.data.Dataset):
         def __init__(self, data_dir, skip_files):
@@ -75,13 +65,12 @@ def main(config: SanaConfig) -> None:
             path = self.files[idx]
             img = Image.open(path).convert("RGB")
             ratio = get_closest_ratio(img.height, img.width)
-            prefsize = get_preffered_size(img.height, img.width)
 
             crop = T.Resize(ratio[1], interpolation=InterpolationMode.BICUBIC)
             return {
                 "img": self.transform(crop(img)),
                 "size": torch.tensor([ratio[1][0], ratio[1][1]]),
-                "prefsize": torch.tensor([prefsize[0], prefsize[1]]),
+                "prefsize": torch.tensor([ratio[1][0], ratio[1][1]]),
                 "ratio": ratio[0],
                 "path": path,
             }
