@@ -331,7 +331,7 @@ def compute_lr(step, peak_lr=7.0e-5, min_lr=5.0e-5, wavelength=200):
     """
     # Generate a random learning rate between min_lr and peak_lr
     current_lr = random.uniform(min_lr, peak_lr)
-    return current_lr
+    return current_lr/min_lr
 
 def train(config, args, accelerator, model, optimizer, lr_scheduler, dataset, train_diffusion):
     if getattr(config.train, "debug_nan", False):
