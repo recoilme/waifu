@@ -327,8 +327,8 @@ def compute_lr(step):
     Returns:
         float: The calculated learning rate for the current step.
     """
-    peak_lr = 8e-5
-    min_lr = 4e-5
+    peak_lr = 7e-5
+    min_lr = 5e-5
     wavelength = 200
     # Compute the progress within the current cycle (0 to 1)
     progress = (step % wavelength) / wavelength
@@ -339,7 +339,7 @@ def compute_lr(step):
         min_lr +
         lr_range / 2 * (1 + math.sin(2 * math.pi * progress - math.pi / 2))
     )
-    return current_lr / 5.0e-5
+    return current_lr / 6.0e-5
 
 def train(config, args, accelerator, model, optimizer, lr_scheduler, dataset, train_diffusion):
     if getattr(config.train, "debug_nan", False):
