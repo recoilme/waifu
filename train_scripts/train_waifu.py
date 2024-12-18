@@ -313,7 +313,8 @@ class ImageDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.images)
 
-def compute_lr(step):
+
+def compute_lr(step, peak_lr=7e-5, min_lr=5e-5, wavelength=200):
     """
     Compute the learning rate based on the current step using a sinusoidal wave.
     
@@ -327,9 +328,6 @@ def compute_lr(step):
     Returns:
         float: The calculated learning rate for the current step.
     """
-    peak_lr = 7e-5
-    min_lr = 5e-5
-    wavelength = 200
     # Compute the progress within the current cycle (0 to 1)
     progress = (step % wavelength) / wavelength
     
@@ -337,9 +335,9 @@ def compute_lr(step):
     lr_range = peak_lr - min_lr
     current_lr = (
         min_lr +
-        lr_range / 2 * (1 + math.sin(2 * math.pi * progress - math.pi / 2))
+        lr_range / 2 * (1 + math.sin(2 * math.pi * progress))
     )
-    return current_lr / 6.0e-5
+    return current_lr
 
 def train(config, args, accelerator, model, optimizer, lr_scheduler, dataset, train_diffusion):
     if getattr(config.train, "debug_nan", False):
