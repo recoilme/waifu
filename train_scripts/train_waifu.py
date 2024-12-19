@@ -260,7 +260,7 @@ class RatioBucketsDataset:
     def make_loaders(self, batch_size):
         self.loaders = []
         self.size = 0
-        for bucket in self.buckets.keys():
+        for bucket in sorted(self.buckets.keys()):
             dataset = ImageDataset(self.buckets[bucket])
 
             loader = torch.utils.data.DataLoader(
