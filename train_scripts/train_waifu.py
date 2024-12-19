@@ -264,7 +264,7 @@ class RatioBucketsDataset:
             dataset = ImageDataset(self.buckets[bucket])
 
             loader = torch.utils.data.DataLoader(
-                dataset, batch_size=batch_size, shuffle=True, pin_memory=False, drop_last=False
+                dataset, batch_size=batch_size, shuffle=False, pin_memory=False, drop_last=True
             )
             self.loaders.append(iter(loader))
             self.size += math.ceil(len(dataset) / batch_size)
