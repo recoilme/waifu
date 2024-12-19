@@ -260,11 +260,11 @@ class RatioBucketsDataset:
     def make_loaders(self, batch_size):
         self.loaders = []
         self.size = 0
-        for bucket in sorted(self.buckets.keys()):
+        for bucket in self.buckets.keys():
             dataset = ImageDataset(self.buckets[bucket])
 
             loader = torch.utils.data.DataLoader(
-                dataset, batch_size=batch_size, shuffle=False, pin_memory=False, drop_last=True
+                dataset, batch_size=batch_size, shuffle=True, pin_memory=False, drop_last=True
             )
             self.loaders.append(iter(loader))
             self.size += math.ceil(len(dataset) / batch_size)
@@ -498,11 +498,11 @@ def train(config, args, accelerator, model, optimizer, lr_scheduler, dataset, tr
                     f"total_eta: {eta}, epoch_eta:{eta_epoch}, time: all:{t:.3f}, model:{t_m:.3f}, optimizer:{t_opt:.3f}, data:{t_d:.3f}, "
                     f"lm:{t_lm:.3f}, lr:{lr:.3e}, "
                 )
-                info += (
-                    f"s:({model.module.h}, {model.module.w}), "
-                    if hasattr(model, "module")
-                    else f"s:({model.h}, {model.w}), "
-                )
+                #info += (
+                #    f"s:({model.module.h}, {model.module.w}), "
+                #    if hasattr(model, "module")
+                #    else f"s:({model.h}, {model.w}), "
+                #)
 
                 info += ", ".join([f"{k}:{v:.4f}" for k, v in log_buffer.output.items()])
                 last_tic = time.time()
