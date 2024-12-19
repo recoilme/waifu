@@ -848,9 +848,9 @@ def main(cfg: SanaConfig) -> None:
         config.train.lr_schedule_args["num_warmup_steps"] = (
                 config.train.lr_schedule_args["num_warmup_steps"] * num_replicas
         )
-    #lr_scheduler = build_lr_scheduler(config.train, optimizer, dataset, 1)
-    from torch.optim.lr_scheduler import LambdaLR
-    lr_scheduler = LambdaLR(optimizer, compute_lr)
+    lr_scheduler = build_lr_scheduler(config.train, optimizer, dataset, 1)
+    #from torch.optim.lr_scheduler import LambdaLR
+    #lr_scheduler = LambdaLR(optimizer, compute_lr)
 
     logger.warning(
         f"{colored(f'Basic Setting: ', 'green', attrs=['bold'])}"
