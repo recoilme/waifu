@@ -19,9 +19,13 @@
 Prompt: 1girl, solo, animal ears, bow, teeth, jacket, tail, open mouth, brown hair, orange background, bowtie, orange nails, simple background, cat ears, orange eyes, blue bow, animal ear fluff, cat tail, looking at viewer, upper body, shirt, school uniform, hood, striped bow, striped, white shirt, black jacket, blue bowtie, fingernails, long sleeves, cat girl, bangs, fangs, collared shirt, striped bowtie, short hair, tongue, hoodie, sharp teeth, facial mark, claw pose
 
 19.12:
+<p align="center" border-raduis="10px">
 <img src="asset/1912.jpg" width="50%"/>
+</p>
 20.12: 
+<p align="center" border-raduis="10px">
 <img src="asset/2012.jpg" width="50%"/>
+</p>
 
 Burned money: ~$1000
 Pls, let' us know if you have some money or GPU for training opensource waifu model, contacts: [recoilme](https://t.me/recoilme)
