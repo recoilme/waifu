@@ -9,20 +9,16 @@
   <img src="asset/waifu.jpg" width="90%" alt="teaser_page1"/>
 </p>
 
-## 💡 Introduction
-
-tldr; We just need a model to generate waifu
-
 ## Train in progress!
 
 [train status](https://wandb.ai/recoilme/waifu-2b)
 
 Current train budget (20.12.2024) ~$1000, we need more money! Aaaaw!
-Pls, let' us know if you have some money or GPU for training opensource waifu model
+Pls, let' us know if you have some money or GPU for training opensource waifu model contacts: [recoilme](https://t.me/recoilme)
 
-[recoilme](https://t.me/recoilme)
+## 💡 Introduction
 
-
+tldr; We just need a model to generate waifu
 
 We introduce Waifu, a text-to-image framework that can efficiently generate images up to 768 × 768 resolution on 80+ languages. Our goal was to create a small model that is easy to use and full-tune on custom GPU, but without compromising on quality. It's like a SD 1.5, but developed in 2024 using the most advanced components at this moment. Waifu can synthesize high-resolution, high-quality images of waifu with strong text-image alignment at a remarkably fast speed, deployable on laptop GPU.
 
