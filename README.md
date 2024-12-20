@@ -25,7 +25,7 @@ Pls, let' us know if you have some money or GPU for training opensource waifu mo
 
 tldr; We just need a model to generate waifu
 
-We introduce Waifu, a text-to-image framework that can efficiently generate images up to 768 × 768 resolution on 80+ languages. Our goal was to create a small model that is easy to use and full-tune on custom GPU, but without compromising on quality. It's like a SD 1.5, but developed in 2024 using the most advanced components at this moment. Waifu can synthesize high-resolution, high-quality images of waifu with strong text-image alignment at a remarkably fast speed, deployable on laptop GPU.
+We introduce Waifu, a text-to-image framework that can efficiently generate images up to 768 × 768 resolution on 80+ languages. Our goal was to create a small model that is easy to full finetune on custom GPU, but without compromising on quality. It's like a SD 1.5, but developed in 2024 using the most advanced components at this moment. Waifu can synthesize high-resolution, high-quality images of waifu with strong text-image alignment at a remarkably fast speed, deployable on laptop GPU.
 
 
 Core designs include:
