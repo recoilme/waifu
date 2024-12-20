@@ -11,13 +11,12 @@
 
 ## Train in progress!
 
-20.12 status
+[logs](https://wandb.ai/recoilme/waifu-2b)
+<p align="center" border-raduis="10px">
+  <img src="asset/progres.png" width="90%"/>
+</p>
 
-Money burned: ~$1000
-
-[train logs](https://wandb.ai/recoilme/waifu-2b)
-
-[waifu](https://api.wandb.ai/files/recoilme/waifu-2b/25/media/images/validation_2999_7a6ba0fb5d9913a8f4ae.jpg?height=654)
+20.12: Money: ~$1000, [waifu](https://api.wandb.ai/files/recoilme/waifu-2b/25/media/images/validation_2999_7a6ba0fb5d9913a8f4ae.jpg?height=654)
 
 Pls, let' us know if you have some money or GPU for training opensource waifu model, contacts: [recoilme](https://t.me/recoilme)
 
