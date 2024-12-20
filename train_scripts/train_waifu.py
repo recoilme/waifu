@@ -90,7 +90,7 @@ def idation(accelerator, config, model, step, device, vae=None, init_noise=None)
         for prompt in validation_prompts:
             logger.info(prompt)
             z = (
-                torch.randn(1, config.vae.vae_latent_dim, int(latent_size*1.25),int(latent_size//1.125), device=device)
+                torch.randn(1, config.vae.vae_latent_dim, int(latent_size*1.3334),int(latent_size), device=device)
                 if init_z is None
                 else init_z
             )
@@ -641,7 +641,7 @@ def main(cfg: SanaConfig) -> None:
     max_length = config.text_encoder.model_max_length
     vae = None
     validation_noise = (
-        torch.randn(1, config.vae.vae_latent_dim, int(latent_size*1.25),int(latent_size//1.125), device="cpu", generator=generator)
+        torch.randn(1, config.vae.vae_latent_dim, int(latent_size*1.3334),int(latent_size), device="cpu", generator=generator)
         if getattr(config.train, "deterministic_validation", False)
         else None
     )
