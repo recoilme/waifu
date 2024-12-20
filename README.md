@@ -11,9 +11,14 @@
 
 ## Train in progress!
 
-[train status](https://wandb.ai/recoilme/waifu-2b)
+20.12 status
 
-Current train budget (20.12.2024) ~$1000, we need more money! Aaaaw!
+Money burned: ~$1000
+
+[train logs](https://wandb.ai/recoilme/waifu-2b)
+
+[waifu](https://api.wandb.ai/files/recoilme/waifu-2b/25/media/images/validation_2999_7a6ba0fb5d9913a8f4ae.jpg?height=654)
+
 Pls, let' us know if you have some money or GPU for training opensource waifu model contacts: [recoilme](https://t.me/recoilme)
 
 ## 💡 Introduction
@@ -28,7 +33,7 @@ Core designs include:
 (1) [**AuraDiffusion/16ch-vae**](https://huggingface.co/AuraDiffusion/16ch-vae): A fully open source 16ch VAE. Natively trained in fp16. \
 (2) [**Linear DiT**](https://github.com/NVlabs/Sana): we use 1.6b DiT transformer with linear attention. \
 (3) [**MEXMA-SigLIP**](https://huggingface.co/visheratin/mexma-siglip): MEXMA-SigLIP is a model that combines the [MEXMA](https://huggingface.co/facebook/MEXMA) multilingual text encoder and an image encoder from the [SigLIP](https://huggingface.co/timm/ViT-SO400M-14-SigLIP-384) model. This allows us to get a high-performance CLIP model for 80 languages.. \
-(4) **Efficient training and sampling**: we use **Flow-Eulerr** as sampler, Adafactor-Fused optimizer and bf16 precision for training, with combine efficient caption labeling with MoonDream, CogVlM and danbooru tags to accelerate convergence.
+(4) Other: we use Flow-Euler sampler, Adafactor-Fused optimizer and bf16 precision for training, and combine efficient caption labeling (MoonDream, CogVlM) and danbooru tags to accelerate convergence.
 
 As a result, Waifu-2b is very competitive with modern giant diffusion model (e.g. Flux-12B), being 20 times smaller and 100+ times faster in measured throughput. Moreover, Waifu-2b can be deployed on a 16GB laptop GPU, taking less than 1 second to generate a 768 × 768 resolution image. Waifu enables waifu creation at low cost.
 
