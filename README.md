@@ -16,8 +16,14 @@
   <img src="asset/progres.png" width="90%"/>
 </p>
 
-20.12: Money: ~$1000, [waifu](https://api.wandb.ai/files/recoilme/waifu-2b/25/media/images/validation_2999_7a6ba0fb5d9913a8f4ae.jpg?height=654)
+Prompt: 1girl, solo, animal ears, bow, teeth, jacket, tail, open mouth, brown hair, orange background, bowtie, orange nails, simple background, cat ears, orange eyes, blue bow, animal ear fluff, cat tail, looking at viewer, upper body, shirt, school uniform, hood, striped bow, striped, white shirt, black jacket, blue bowtie, fingernails, long sleeves, cat girl, bangs, fangs, collared shirt, striped bowtie, short hair, tongue, hoodie, sharp teeth, facial mark, claw pose
 
+19.12:
+<img src="asset/1912.png" width="50%"/>
+20.12: 
+<img src="asset/2012.png" width="50%"/>
+
+Burned money: ~$1000
 Pls, let' us know if you have some money or GPU for training opensource waifu model, contacts: [recoilme](https://t.me/recoilme)
 
 ## 💡 Introduction
