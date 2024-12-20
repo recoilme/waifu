@@ -2,7 +2,7 @@
   <img src="asset/logo_waifu.png" width="35%" alt="logo"/>
 </p>
 
-# ⚡️Waifu: Efficient High-Resolution Image Synthesis with Linear Diffusion Transformer 
+# ⚡️Waifu: Efficient High-Resolution Waifu Synthesis
 
 
 <p align="center" border-raduis="10px">
