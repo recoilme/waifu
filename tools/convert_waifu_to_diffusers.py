@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+# !!!
+# pip uninstall diffusers --break-system-packages
+# pip install git+https://github.com/lawrence-cj/diffusers@Sana --break-system-packages
+ 
 from __future__ import annotations
 
 import argparse
