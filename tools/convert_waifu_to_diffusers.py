@@ -276,7 +276,7 @@ if __name__ == "__main__":
             "num_cross_attention_heads": 20,
             "cross_attention_head_dim": 112,
             "cross_attention_dim": 2240,
-            "num_layers": 20,
+            "num_layers": 20, 
         },
         "SanaMS_600M_P1_D28": {
             "num_attention_heads": 36,
