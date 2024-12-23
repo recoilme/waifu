@@ -10,13 +10,13 @@ import os
 from contextlib import nullcontext
 
 import torch
-from accelerate import init_empty_weights 
+from accelerate import init_empty_weights
 from diffusers import (
     FlowMatchEulerDiscreteScheduler,
     SanaPipeline,
-    AutoModel,
     SanaTransformer2DModel,
 )
+from transformers import AutoModel
 from diffusers.models import AutoencoderKL
 from diffusers.models.modeling_utils import load_model_dict_into_meta
 from diffusers.utils.import_utils import is_accelerate_available
@@ -204,17 +204,10 @@ def main(args):
         # VAE
         ae = AutoencoderKL.from_pretrained("AuraDiffusion/16ch-vae", torch_dtype=torch.float16)
 
-        # Text Encoder
-        #text_encoder_model_path = "google/gemma-2-2b-it"
-        #tokenizer = AutoTokenizer.from_pretrained(text_encoder_model_path)
-        #tokenizer.padding_side = "right"
-        #text_encoder = AutoModelForCausalLM.from_pretrained(
-        #    text_encoder_model_path, torch_dtype=torch.bfloat16
-        #).get_decoder()
-
         text_encoder_model_path = "visheratin/mexma-siglip"
         tokenizer = AutoTokenizer.from_pretrained(text_encoder_model_path)
-        text_encoder = AutoModel.from_pretrained(text_encoder_model_path, torch_dtype=torch.bfloat16).get_decoder()#, trust_remote_code=True, optimized=True).to(device)
+        text_encoder = AutoModel.from_pretrained(text_encoder_model_path, torch_dtype=torch.bfloat16, trust_remote_code=True)
+        del text_encoder.vision_model
 
         # Scheduler
         if args.scheduler_type == "flow-dpm_solver":
