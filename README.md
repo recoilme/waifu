@@ -47,4 +47,21 @@ Core designs include:
 As a result, Waifu-2b is very competitive with modern giant diffusion model (e.g. Flux-12B), being 20 times smaller and 100+ times faster in measured throughput. Moreover, Waifu-2b can be deployed on a 16GB laptop GPU, taking less than 1 second to generate a 768 × 768 resolution image. Waifu enables waifu creation at low cost.
 
 
+## Example
+
+```
+    1  apt update
+    4  git clone https://github.com/recoilme/waifu
+    5  cd waifu/
+    6  pip install -e .
+    7  pip install flash-attn --no-build-isolation
+    8  cd ..
+   13  python waifu/train_scripts/make_buckets_new.py --h
+   14  python waifu/train_scripts/make_buckets_new.py --config_path waifu/configs/sana_config/576ms/waifu-2b-576.yaml --load_from waifu-2b-v01.pth 
+   15  cd waifu
+   21  nvidia-smi
+   25  accelerate config
+   61  nohup accelerate launch train_scripts/train_waifu.py --config configs/sana_config/576ms/waifu-2b-576.yaml --name 33 --load_from /workspace/waifu-2b-v01.pth &
+   62  tail -f nohup.out
+```
  // AiArtLab team

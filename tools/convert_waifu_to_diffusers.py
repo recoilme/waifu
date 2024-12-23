@@ -163,7 +163,7 @@ def main(args):
             caption_channels=1024,#2304,
             mlp_ratio=2.5,
             attention_bias=False,
-            sample_size=args.image_size // 32,
+            sample_size=args.image_size // 8,
             patch_size=1,
             norm_elementwise_affine=False,
             norm_eps=1e-6,

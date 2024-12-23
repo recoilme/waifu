@@ -87,10 +87,16 @@ def idation(accelerator, config, model, step, device, vae=None, init_noise=None)
         latents = []
         current_image_logs = []
 
-        for prompt in validation_prompts:
+        for n, prompt in enumerate(validation_prompts):
             logger.info(prompt)
+            if n < 3:
+                k = 1.3334
+            elif n < 6:
+                k = 1.25
+            else:
+                k = 1.0
             z = (
-                torch.randn(1, config.vae.vae_latent_dim, int(latent_size*1.3334),int(latent_size), device=device)
+                torch.randn(1, config.vae.vae_latent_dim, int(latent_size*k),int(latent_size), device=device)
                 if init_z is None
                 else init_z
             )
