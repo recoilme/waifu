@@ -12,12 +12,12 @@ from contextlib import nullcontext
 import torch
 from accelerate import init_empty_weights
 from diffusers import (
-    DPMSolverMultistepScheduler,
     FlowMatchEulerDiscreteScheduler,
     SanaPipeline,
     AutoModel,
     SanaTransformer2DModel,
 )
+from diffusers.models import AutoencoderKL
 from diffusers.models.modeling_utils import load_model_dict_into_meta
 from diffusers.utils.import_utils import is_accelerate_available
 from huggingface_hub import hf_hub_download, snapshot_download
@@ -202,7 +202,7 @@ def main(args):
     else:
         print(colored(f"Saving the whole SanaPipeline containing {args.model_type}", "green", attrs=["bold"]))
         # VAE
-        ae = AutoencoderDC.from_pretrained("AuraDiffusion/16ch-vae", torch_dtype=torch.float16)
+        ae = AutoencoderKL.from_pretrained("AuraDiffusion/16ch-vae", torch_dtype=torch.float16)
 
         # Text Encoder
         #text_encoder_model_path = "google/gemma-2-2b-it"
