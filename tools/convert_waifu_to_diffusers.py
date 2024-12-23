@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-# !!!
+
 # pip uninstall diffusers --break-system-packages
 # pip install git+https://github.com/lawrence-cj/diffusers@Sana --break-system-packages
- 
+# python3 convert_waifu_to_diffusers.py --orig_ckpt_path /home/recoilme/waifu/w1_epoch_1_step_4800.pth --image_size 512 --model_type SanaMS_1600M_P1_D20 --scheduler_type flow-euler --dtype fp16
 from __future__ import annotations
 
 import argparse
@@ -12,10 +12,10 @@ from contextlib import nullcontext
 import torch
 from accelerate import init_empty_weights
 from diffusers import (
-    AutoencoderDC,
     DPMSolverMultistepScheduler,
     FlowMatchEulerDiscreteScheduler,
     SanaPipeline,
+    AutoModel,
     SanaTransformer2DModel,
 )
 from diffusers.models.modeling_utils import load_model_dict_into_meta
@@ -52,7 +52,7 @@ def main(args):
         file_path = args.orig_ckpt_path
 
     print(colored(f"Loading checkpoint from {file_path}", "green", attrs=["bold"]))
-    all_state_dict = torch.load(file_path, weights_only=True)
+    all_state_dict = torch.load(file_path, weights_only=False)
     state_dict = all_state_dict.pop("state_dict")
     converted_state_dict = {}
 
@@ -152,15 +152,15 @@ def main(args):
     # Transformer
     with CTX():
         transformer = SanaTransformer2DModel(
-            in_channels=32,
-            out_channels=32,
+            in_channels=16,
+            out_channels=16,
             num_attention_heads=model_kwargs[args.model_type]["num_attention_heads"],
             attention_head_dim=model_kwargs[args.model_type]["attention_head_dim"],
             num_layers=model_kwargs[args.model_type]["num_layers"],
             num_cross_attention_heads=model_kwargs[args.model_type]["num_cross_attention_heads"],
             cross_attention_head_dim=model_kwargs[args.model_type]["cross_attention_head_dim"],
             cross_attention_dim=model_kwargs[args.model_type]["cross_attention_dim"],
-            caption_channels=2304,
+            caption_channels=1024,#2304,
             mlp_ratio=2.5,
             attention_bias=False,
             sample_size=args.image_size // 32,
@@ -197,20 +197,24 @@ def main(args):
             )
         )
         transformer.save_pretrained(
-            os.path.join(args.dump_path, "transformer"), safe_serialization=True, max_shard_size="5GB", variant=variant
+            os.path.join(args.dump_path, "transformer"), safe_serialization=True, max_shard_size="10GB", variant=variant
         )
     else:
         print(colored(f"Saving the whole SanaPipeline containing {args.model_type}", "green", attrs=["bold"]))
         # VAE
-        ae = AutoencoderDC.from_pretrained("mit-han-lab/dc-ae-f32c32-sana-1.0-diffusers", torch_dtype=torch.float32)
+        ae = AutoencoderDC.from_pretrained("AuraDiffusion/16ch-vae", torch_dtype=torch.float16)
 
         # Text Encoder
-        text_encoder_model_path = "google/gemma-2-2b-it"
+        #text_encoder_model_path = "google/gemma-2-2b-it"
+        #tokenizer = AutoTokenizer.from_pretrained(text_encoder_model_path)
+        #tokenizer.padding_side = "right"
+        #text_encoder = AutoModelForCausalLM.from_pretrained(
+        #    text_encoder_model_path, torch_dtype=torch.bfloat16
+        #).get_decoder()
+
+        text_encoder_model_path = "visheratin/mexma-siglip"
         tokenizer = AutoTokenizer.from_pretrained(text_encoder_model_path)
-        tokenizer.padding_side = "right"
-        text_encoder = AutoModelForCausalLM.from_pretrained(
-            text_encoder_model_path, torch_dtype=torch.bfloat16
-        ).get_decoder()
+        text_encoder = AutoModel.from_pretrained(text_encoder_model_path, torch_dtype=torch.bfloat16).get_decoder()#, trust_remote_code=True, optimized=True).to(device)
 
         # Scheduler
         if args.scheduler_type == "flow-dpm_solver":
