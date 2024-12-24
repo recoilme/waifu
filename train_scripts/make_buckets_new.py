@@ -21,8 +21,8 @@ def main(config: SanaConfig) -> None:
     step = 64
 
     ASPECT_RATIO = {}
-    width = int(config.model.image_size // 1.5)  # Преобразуем в int
-    height = int(config.model.image_size * 1.3334)  # Преобразуем в int
+    width = int(config.model.image_size // 1.33333)  # Преобразуем в int
+    height = int(config.model.image_size * 1.5)  # Преобразуем в int
     for w in range(width, height + 1, step):  # Диапазон ширины
         for h in range(width, height + 1, step):  # Диапазон высоты
             ratio = round(w / h, 2)  # Вычисляем соотношение сторон и округляем до 2 знаков

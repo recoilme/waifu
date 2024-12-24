@@ -1,0 +1,96 @@
+data:
+  data_dir: [/workspace/768]
+  image_size: 512
+# training setting
+train:
+  num_workers: 1
+  seed: 42
+  train_batch_size: 4
+  num_epochs: 1
+  gradient_accumulation_steps: 1
+  grad_checkpointing: true
+  gradient_clip: 0.1
+#  optimizer:
+#    lr: 6.0e-5
+#    type: AdafactorFusedWrapper
+#    scale_parameter: false
+#    relative_step: false
+#    warmup_init: false
+  optimizer:
+    lr: 1.0e-4
+    type: AdamW
+    weight_decay: 0.01
+    eps: 1.0e-8
+    betas: [0.9, 0.999]
+  lr_schedule: constant
+  lr_schedule_args:
+    num_warmup_steps: 0
+  local_save_vis: false # if save log image locally
+  visualize: true
+  eval_sampling_steps: 600
+  log_interval: 32
+  save_model_epochs: 1
+  save_model_steps: 1200
+  work_dir: output
+  online_metric: false
+  eval_metric_step: 200000
+  online_metric_dir: metric_helper
+  validation_prompts:
+    - молодая девушка в красном платье
+    - a young girl with blonde hair and green eyes, dressed in a white dress with a ruffled skirt. She is kneeling on one knee, with her arms resting on her knees, and her gaze directed towards the viewer. The background is a vibrant mix of pink and blue, adorned with white polka dots and splashes of color. The girl pose and attire suggest a sense of elegance and grace. Asseylum Vers Allusia, Aldnoah.Zero
+    - A digital artwork of a female character with a striking appearance. the character has long, wavy hair that transitions from a light pink at the roots to a dark green at the tips, giving it a gradient effect. her eyes are a captivating shade of blue, and they are accentuated with long, fluttering eyelashes. the character skin is a soft pink hue, and her lips are subtly colored in a matching shade. the artwork is composed of two views of the characters face, one from the front and one from the side. the front view showcases the character face in full, while the side view provides a profile perspective. both views are set against a white background, which contrasts with the vibrant colors of the character hair and skin. adding to the charm of the character are small, sparkling dots scattered across her face, giving her a magical and ethereal appearance. the overall style of the artwork is reminiscent of the artist karmen loh, known for her sparklecore and glittercore aesthetics. a beautiful representation of digital art, capturing the essence of the character with its detailed features and vibrant colors.
+    - a young anime girl with blonde hair and a red bow in her hair, wearing a black and white school uniform. She is standing against a blue sky with white clouds, and her left hand is raised, while her right hand is on her hip. The girls face is lit up with a smile, and she appears to be waving at the viewer. Yuudachi, Kantai Collection
+    - year22,2girls,:d,aged down,animal ears,animal hood,bell,black hairband,blue bow,blue eyes,blush,bow,braid,brown hoodie,cowboy shot,detached sleeves,fake animal ears,fangs,fur collar,hairband,hood,hood up,hoodie,japanese clothes,long sleeves,looking at viewer,miniskirt,by momochi chia,multiple girls,one eye closed,open mouth,pleated skirt,signature,skirt,smile,tail,tail raised,thighs,virtual youtuber,white hair
+    - 1girl, solo, animal ears, bow, teeth, jacket, tail, open mouth, brown hair, orange background, bowtie, orange nails, simple background, cat ears, orange eyes, blue bow, animal ear fluff, cat tail, looking at viewer, upper body, shirt, school uniform, hood, striped bow, striped, white shirt, black jacket, blue bowtie, fingernails, long sleeves, cat girl, bangs, fangs, collared shirt, striped bowtie, short hair, tongue, hoodie, sharp teeth, facial mark, claw pose
+    - year23,1girl,black choker,black horns,black skirt,blush,bracelet,breasts,choker,cleavage,closed mouth,collared shirt,double bun,fake horns,grey background,hair bun,halo,holding,horns,jewelry,kirara (blue archive),large breasts,long hair,looking at viewer,nail polish,necklace,panties,pantyshot,pencil skirt,pink panties,by r0 0ong,red eyes,red hair,shirt,simple background,sitting,skirt,sleeves rolled up,socks,solo,sweater,thigh strap,underwear,very long hair,white shirt,white socks
+    - A lively scene unfolds on a ship at night. a group of people, both boys and girls, are gathered around a large fire pit. they are all smiling and appear to be in high spirits, with some of them holding up their arms in celebration. the ship is adorned with colorful lanterns that hang from the rigging, casting a warm glow over the scene. the sky above is dark, suggesting its nighttime, and the ship is set against this backdrop. the atmosphere is one of joy and camaraderie, as if they are celebrating a victory or a special occasion.
+    - woman, solo, black hair, medium length hair, female focus, solo, bedroom, messy room, standing, black tube top, black panties, camel toe , peace sign, choker, top pulled down, taking a selfie
+    - собака, бостон терьер
+    - нарядная новогодняя елка, красивые игрушки, звезда сверху, огоньки, на тёмном фоне
+    - новогодний портрет Деда Мороза, смотрит строго, но с улыбкой, в аниме стиле
+# model config
+model:
+  model: SanaMS_1600M_P1_D20
+  image_size: 512
+  aspect_ratio_type: ASPECT_RATIO_512
+  mixed_precision: bf16
+  fp32_attention: true
+  load_from: 
+  resume_from:
+  multi_scale: true
+  attn_type: linear
+  linear_head_dim: 32
+  ffn_type: glumbconv
+  mlp_acts:
+    - silu
+    - silu
+    - null
+  mlp_ratio: 2.5
+  use_pe: false
+  qk_norm: false
+  class_dropout_prob: 0.1
+# VAE setting
+vae:
+  vae_type: sd3
+  vae_pretrained: AuraDiffusion/16ch-vae
+  scale_factor: 0.18215
+  vae_latent_dim: 16
+  vae_downsample_rate: 8
+  sample_posterior: true
+# text encoder
+text_encoder:
+  text_encoder_name: mexma-siglip
+  y_norm: true
+  y_norm_scale_factor: 0.01
+  model_max_length: 512
+# Sana schedule Flow
+scheduler:
+  predict_v: true
+  noise_schedule: linear_flow
+  pred_sigma: false
+  flow_shift: 1.0
+  # logit-normal timestep
+  weighting_scheme: logit_normal
+  logit_mean: 0.0
+  logit_std: 1.0
+  vis_sampler: flow_euler
