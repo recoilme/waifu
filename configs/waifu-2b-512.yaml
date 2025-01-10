@@ -1,17 +1,18 @@
 data:
-  data_dir: [/home/recoilme/nusha2]
+  data_dir: [/workspace/1024]
   image_size: 512
 # training setting
 train:
+  use_flash_attn: true
   num_workers: 1
   seed: 42
-  train_batch_size: 1
-  num_epochs: 1
+  train_batch_size: 10
+  num_epochs: 4
   gradient_accumulation_steps: 1
   grad_checkpointing: true
   gradient_clip: 0.1
   optimizer:
-    lr: 1.0e-4
+    lr: 8.0e-7
     type: AdafactorWrapper
     scale_parameter: false
     relative_step: false
@@ -23,7 +24,7 @@ train:
 #    relative_step: false
 #    warmup_init: false
 #  optimizer:
-#    lr: 1.0e-4
+#    lr: 1.0e-6
 #    type: AdamW
 #    weight_decay: 0.01
 #    eps: 1.0e-8
@@ -33,14 +34,23 @@ train:
     num_warmup_steps: 0
   local_save_vis: false # if save log image locally
   visualize: true
-  eval_sampling_steps: 1200
+  eval_sampling_steps: 600
   log_interval: 30
   save_model_epochs: 1
-  save_model_steps: 1
+  save_model_steps: 1200
   work_dir: output
   online_metric: false
   eval_metric_step: 200000
   online_metric_dir: metric_helper
+  validation_prompts:
+    - 1girl, solo, animal ears, bow, teeth, jacket, tail, open mouth, brown hair, orange background, bowtie, orange nails, simple background, cat ears, orange eyes, blue bow, animal ear fluff, cat tail, looking at viewer, upper body, shirt, school uniform, hood, striped bow, striped, white shirt, black jacket, blue bowtie, fingernails, long sleeves, cat girl, bangs, fangs, collared shirt, striped bowtie, short hair, tongue, hoodie, sharp teeth, facial mark, claw pose
+    - A lively scene unfolds on a ship at night. a group of people, both boys and girls, are gathered around a large fire pit. they are all smiling and appear to be in high spirits, with some of them holding up their arms in celebration. the ship is adorned with colorful lanterns that hang from the rigging, casting a warm glow over the scene. the sky above is dark, suggesting its nighttime, and the ship is set against this backdrop. the atmosphere is one of joy and camaraderie, as if they are celebrating a victory or a special occasion.
+    - молодая девушка в красном платье
+    - A young woman with striking features. her hair, a mix of black and gold, floats around her head, adding a sense of movement to the scene. her eyes, a vibrant yellow, are half-closed, giving her a contemplative expression. she is dressed in a blue sweater, which contrasts with the black background. the overall composition of the image is simple yet striking, with the womans profile taking center stage.
+    - нарядная новогодняя елка, красивые игрушки, звезда сверху, огоньки, на тёмном фоне
+    - In the center of a dark, smoky background, a figure clad in a vibrant red bodysuit stands out. The suit is adorned with intricate designs and armor plating, giving it a formidable appearance. The helmet, matching the suit, features a visor with glowing red eyes, adding to the mysterious aura of the character.
+    - Two young women are sitting on the ground side by side. They are both looking at the camera with smiles on their faces. The woman on the left has long, wavy brown hair and is wearing a pink dress with a ruffled hem and black tights. The woman on the right has long, wavy pink hair and is wearing a black dress with a lace overlay and black tights. They are both sitting on a sidewalk in front of a store, and there are other people walking in the background.
+    - A young girl with long brown hair and brown eyes is standing against a brick wall, wearing a white shirt with a black sailor collar and a black pleated skirt. She is smiling and looking directly at the viewer, with sunlight filtering through the green vines behind her
 # model config
 model:
   model: SanaMS_1600M_P1_D20

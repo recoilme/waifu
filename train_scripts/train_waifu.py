@@ -320,7 +320,7 @@ class ImageDataset(torch.utils.data.Dataset):
         return len(self.images)
 
 
-def compute_lr(step, peak_lr=7.0e-5, min_lr=5.0e-5, wavelength=200):
+def compute_lr(step, peak_lr=3.0e-6, min_lr=1.0e-6, wavelength=1200):
     """
     Compute a  learning rate within the range [min_lr, peak_lr].
     
@@ -855,7 +855,7 @@ def main(cfg: SanaConfig) -> None:
                 config.train.lr_schedule_args["num_warmup_steps"] * num_replicas
         )
     lr_scheduler = build_lr_scheduler(config.train, optimizer, dataset, 1)
-    #from torch.optim.lr_scheduler import LambdaLR
+    from torch.optim.lr_scheduler import LambdaLR
     #lr_scheduler = LambdaLR(optimizer, compute_lr)
 
     logger.warning(
