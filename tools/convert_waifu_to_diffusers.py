@@ -205,9 +205,17 @@ def main(args):
         ae = AutoencoderKL.from_pretrained("AuraDiffusion/16ch-vae", torch_dtype=torch.float16)
 
         text_encoder_model_path = "visheratin/mexma-siglip"
-        tokenizer = AutoTokenizer.from_pretrained(text_encoder_model_path)
-        text_encoder = AutoModel.from_pretrained(text_encoder_model_path, torch_dtype=torch.bfloat16, trust_remote_code=True)
-        del text_encoder.vision_model
+        #tokenizer = AutoTokenizer.from_pretrained(text_encoder_model_path)
+        from transformers import XLMRobertaTokenizerFast
+        tokenizer = XLMRobertaTokenizerFast.from_pretrained(text_encoder_model_path)
+        
+        #text_encoder = AutoModel.from_pretrained(text_encoder_model_path, torch_dtype=torch.bfloat16, trust_remote_code=True)
+        text_encoder = AutoModel.from_pretrained(
+            text_encoder_model_path,
+            trust_remote_code=True
+        ).text_model
+        #del text_encoder.vision_model
+        #text_encoder = text_encoder.text_model
 
         # Scheduler
         if args.scheduler_type == "flow-dpm_solver":
