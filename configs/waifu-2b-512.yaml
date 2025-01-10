@@ -10,25 +10,31 @@ train:
   gradient_accumulation_steps: 1
   grad_checkpointing: true
   gradient_clip: 0.1
+  optimizer:
+    lr: 1.0e-4
+    type: AdafactorWrapper
+    scale_parameter: false
+    relative_step: false
+    warmup_init: false
 #  optimizer:
 #    lr: 6.0e-5
 #    type: AdafactorFusedWrapper
 #    scale_parameter: false
 #    relative_step: false
 #    warmup_init: false
-  optimizer:
-    lr: 1.0e-4
-    type: AdamW
-    weight_decay: 0.01
-    eps: 1.0e-8
-    betas: [0.9, 0.999]
+#  optimizer:
+#    lr: 1.0e-4
+#    type: AdamW
+#    weight_decay: 0.01
+#    eps: 1.0e-8
+#    betas: [0.9, 0.999]
   lr_schedule: constant
   lr_schedule_args:
     num_warmup_steps: 0
   local_save_vis: false # if save log image locally
   visualize: true
-  eval_sampling_steps: 600
-  log_interval: 32
+  eval_sampling_steps: 1200
+  log_interval: 30
   save_model_epochs: 1
   save_model_steps: 1
   work_dir: output
