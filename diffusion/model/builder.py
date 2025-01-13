@@ -75,6 +75,20 @@ def get_tokenizer_and_text_encoder(name="T5", device="cuda"):
         tokenizer = AutoTokenizer.from_pretrained(text_encoder_dict[name])
         text_encoder = AutoModel.from_pretrained(text_encoder_dict[name], torch_dtype=torch.bfloat16, trust_remote_code=True, optimized=True).to(device)
         del text_encoder.vision_model
+        #from transformers import XLMRobertaTokenizerFast,XLMRobertaModel
+        #pipe_id = "AiArtLab/waifu-2b"
+        #variant = "fp16"
+        # tokenizer
+        #tokenizer = XLMRobertaTokenizerFast.from_pretrained(
+        #    pipe_id,
+        #    subfolder="tokenizer"
+        #)
+        # text_encoder
+        #text_encoder = XLMRobertaModel.from_pretrained(
+        #    pipe_id,
+        #    variant=variant,
+        #    subfolder="text_encoder"
+        #).to(device)
     else:
         print("error load text encoder")
         exit()

@@ -213,9 +213,9 @@ def main(args):
         text_encoder = AutoModel.from_pretrained(
             text_encoder_model_path,
             trust_remote_code=True
-        ).text_model
-        #del text_encoder.vision_model
-        #text_encoder = text_encoder.text_model
+        )
+        del text_encoder.vision_model
+        text_encoder = text_encoder.text_model
 
         # Scheduler
         if args.scheduler_type == "flow-dpm_solver":

@@ -89,14 +89,22 @@ def idation(accelerator, config, model, step, device, vae=None, init_noise=None)
 
         for n, prompt in enumerate(validation_prompts):
             logger.info(prompt)
-            if n < 3:
-                k = 1.3334
+            w = latent_size #512 // 8
+            h = latent_size
+            if n < 2:
+                w = 768 // 8
+                h = 1024 // 8
+            elif n < 4:
+                w = 640 // 8
+                h = 960 // 8
             elif n < 6:
-                k = 1.25
+                w = 768 // 8
+                h = 768 // 8
             else:
-                k = 1.0
+                w = 512 // 8
+                h = 512 // 8
             z = (
-                torch.randn(1, config.vae.vae_latent_dim, int(latent_size*k),int(latent_size), device=device)
+                torch.randn(1, config.vae.vae_latent_dim, int(h),int(w), device=device)
                 if init_z is None
                 else init_z
             )
