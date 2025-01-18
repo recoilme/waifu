@@ -93,7 +93,7 @@ def load_checkpoint(
     ckpt_file = checkpoint
     checkpoint = find_model(ckpt_file)
 
-    state_dict_keys = ["pos_embed", "base_model.pos_embed", "model.pos_embed"]
+    state_dict_keys = [] #["pos_embed", "base_model.pos_embed", "model.pos_embed"]
     for key in state_dict_keys:
         if key in checkpoint["state_dict"]:
             del checkpoint["state_dict"][key]

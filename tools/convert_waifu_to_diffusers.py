@@ -56,6 +56,10 @@ def main(args):
     state_dict = all_state_dict.pop("state_dict")
     converted_state_dict = {}
 
+    print("All keys in state_dict:")
+    for key in state_dict.keys():
+        print(key)
+
     # Patch embeddings.
     converted_state_dict["patch_embed.proj.weight"] = state_dict.pop("x_embedder.proj.weight")
     converted_state_dict["patch_embed.proj.bias"] = state_dict.pop("x_embedder.proj.bias")

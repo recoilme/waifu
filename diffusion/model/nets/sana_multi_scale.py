@@ -300,6 +300,7 @@ class SanaMS(Sana):
                 )
             x += self.pos_embed_ms  # (N, T, D), where T = H * W / patch_size ** 2
         else:
+            #print("if self.use_pe:false")
             x = self.x_embedder(x)
 
         t = self.t_embedder(timestep)  # (N, D)
