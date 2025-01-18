@@ -68,9 +68,10 @@ def main(config: SanaConfig) -> None:
         def __getitem__(self, idx):
             path = self.files[idx]
             img = Image.open(path).convert("RGB")
-            ratio = get_closest_ratio(img.height, img.width)
-
-            crop = T.Resize(ratio[1], interpolation=InterpolationMode.BICUBIC)
+            ratio = [int(512), int(512)] #get_closest_ratio(img.height, img.width)
+            # center crop image
+            crop = T.CenterCrop(min(img.height, img.width))
+            crop = T.Resize(ratio[1], interpolation=InterpolationMode.LANCZOS)
             return {
                 "img": self.transform(crop(img)),
                 "size": torch.tensor([ratio[1][0], ratio[1][1]]),
